@@ -1,0 +1,26 @@
+/* Dashboard.css */
+
+.shortcuts {
+  margin-top: 20px;
+}
+
+.shortcut-item {
+  margin: 10px 0;
+}
+
+.shortcut-item button {
+  background-color: #4CAF50; /* Color de fondo verde */
+  color: white; /* Color del texto */
+  border: none; /* Sin borde */
+  padding: 10px 15px; /* Espaciado interno */
+  text-align: center; /* Centrar texto */
+  text-decoration: none; /* Sin subrayado */
+  display: inline-block; /* Para permitir el tamaño */
+  font-size: 16px; /* Tamaño de fuente */
+  border-radius: 5px; /* Bordes redondeados */
+  transition: background-color 0.3s; /* Transición suave para el hover */
+}
+
+.shortcut-item button:hover {
+  background-color: #45a049; /* Color de fondo al pasar el mouse */
+}

@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - REACT_APP_GOOGLE_CLIENT_ID=${CLIENT_ID}
+      - REACT_APP_API_KEY=${API_KEY}
+      - REACT_APP_BACKEND_URL=http://localhost:3000
+    networks:
+      - app-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - JWT_SECRET=${JWT_SECRET}
+      - CLIENT_ID=${CLIENT_ID}
+      - API_KEY=${API_KEY}
+      - MONGODB_URI=mongodb://172.17.0.1:27017/BDproyectores
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:

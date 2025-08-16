@@ -1,0 +1,19 @@
+/* MiniCalendar.css */
+.mini-calendar {
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Centra horizontalmente */
+    justify-content: center; /* Centra verticalmente */
+    min-height: 100vh; /* Ocupa toda la altura de la ventana */
+    padding: 20px;
+  }
+  
+  .mini-calendar h2 {
+    margin-bottom: 10px; /* Espaciado entre el título y el párrafo */
+  }
+  
+  .mini-calendar p {
+    margin-bottom: 20px; /* Espaciado entre el párrafo y el calendario */
+    text-align: center; /* Centrar el texto del párrafo */
+  }
+  

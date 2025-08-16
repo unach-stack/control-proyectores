@@ -1,0 +1,113 @@
+.react-calendar__tile--active,
+.react-calendar__tile--active:enabled:hover,
+.react-calendar__tile--active:enabled:focus {
+  background: #4f46e5 !important;
+  color: white !important;
+  transition: all 0.1s ease-out !important;
+}
+
+.request-projector-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;  
+  height: 100vh;
+}
+
+.icon-container {
+  margin-bottom: 100px;
+}
+
+.react-calendar {
+  @apply w-full max-w-full text-sm sm:text-base bg-white dark:bg-gray-800 text-gray-900 dark:text-white;
+}
+
+.react-calendar__tile {
+  @apply h-12 sm:h-16 md:h-20 relative transition-all duration-200 
+         text-gray-700 dark:text-gray-200;
+  transition: all 0.1s ease-out !important;
+  position: relative;
+}
+
+.event-day {
+  position: relative;
+  background-color: #ef4444 !important;
+  color: white !important;
+}
+
+.selected-date {
+  background-color: #4f46e5 !important;
+  color: white !important;
+  transition: all 0.1s ease-out !important;
+}
+
+.event-day.selected-date {
+  background-color: #7c3aed !important;
+  color: white !important;
+}
+
+.event-day::after {
+  @apply content-[''] absolute bottom-1 left-1/2 -translate-x-1/2 
+         w-1.5 h-1.5 rounded-full bg-current;
+}
+
+.react-calendar__tile:not(.event-day):not(.selected-date):hover {
+  @apply bg-gray-100 dark:bg-gray-700;
+}
+
+.event-day:hover {
+  background-color: #b91c1c !important;
+}
+
+.request-button,
+.delete-event-button {
+  padding: 15px 30px;
+  font-size: 20px;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin: 10px; 
+  transition: background-color 0.3s ease;
+}
+
+.request-button:hover {
+  background-color: #45a049;
+}
+
+.react-calendar__tile:disabled {
+  background-color: #f3f4f6;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.dark .react-calendar__tile:disabled {
+  background-color: #374151;
+  opacity: 0.3;
+}
+
+/* Responsive para dispositivos pequeños */
+@media (max-width: 640px) {
+  .react-calendar__tile {
+    @apply h-10;
+  }
+  
+  .event-day::after {
+    @apply w-1 h-1;
+  }
+}
+
+.calendar-tile {
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+/* Estilos para modo oscuro */
+.dark .selected-date {
+  background-color: #6366f1 !important;
+}
+
+.dark .event-day {
+  background-color: #dc2626 !important;
+}

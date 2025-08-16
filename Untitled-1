@@ -1,0 +1,74 @@
+// Función para seleccionar "Excelente" en todas las preguntas
+function seleccionarExcelente() {
+    const botonesEvaluar = document.querySelectorAll('input[type="radio"]');
+    
+    botonesEvaluar.forEach(boton => {
+        if (boton.nextSibling && boton.nextSibling.textContent.trim() === "Excelente") {
+            boton.checked = true;
+        }
+    });
+}
+
+// Función para buscar y hacer clic en el botón "Siguiente", "Registrar" o "Continuar"
+function irASiguiente() {
+    const siguienteBoton = Array.from(document.querySelectorAll('input[type="submit"]')).find(el => el.value.includes('Siguiente'));
+    const registrarBoton = Array.from(document.querySelectorAll('input[type="submit"]')).find(el => el.value.includes('Registrar'));
+    const continuarBoton = Array.from(document.querySelectorAll('input[type="submit"]')).find(el => el.value.includes('CONTINUAR'));
+    
+    if (siguienteBoton) {
+        siguienteBoton.click();
+    } else if (registrarBoton) {
+        registrarBoton.click();
+    } else if (continuarBoton) {
+        continuarBoton.click();
+    } else {
+        console.log("No se encontró el botón 'Siguiente', 'Registrar' o 'Continuar'.");
+        setTimeout(irASiguiente, 1000); // Intenta de nuevo después de un segundo
+    }
+}
+
+// Función para buscar y hacer clic en el enlace "EVALUAR"
+function evaluarDocente() {
+    setTimeout(() => {
+        const evaluarBoton = Array.from(document.querySelectorAll('a[href*="evaluar"]')).find(el => el.textContent.trim() === '[EVALUAR]');
+        
+        if (evaluarBoton) {
+            evaluarBoton.click();
+        } else {
+            console.log("No se encontró el enlace '[EVALUAR]'.");
+        }
+    }, 500); // Espera 500 ms antes de buscar el enlace
+}
+
+// Función principal para ejecutar el flujo
+function completarEncuesta() {
+    // Verifica si estamos en la página de evaluación
+    const evaluarBoton = document.querySelector('a[href*="evaluar"]');
+    
+    if (evaluarBoton) {
+        evaluarBoton.click(); // Si está en la página de selección, hace clic en "EVALUAR"
+        return; // Salir de la función después de hacer clic
+    }
+
+    // Si no se encontró el botón "EVALUAR", selecciona "Excelente"
+    seleccionarExcelente();
+
+    // Espera un segundo antes de ir a la siguiente sección
+    setTimeout(() => {
+        irASiguiente();
+        
+        // Vuelve a ejecutar la función para la siguiente página
+        setTimeout(completarEncuesta, 1000); // Espera un segundo antes de volver a ejecutar
+    }, 500);
+}
+
+// Configura un MutationObserver para detectar cambios en el DOM
+const observer = new MutationObserver(() => {
+    completarEncuesta(); // Ejecuta la función cada vez que hay un cambio en el DOM
+});
+
+// Inicia la observación en el cuerpo del documento
+observer.observe(document.body, { childList: true, subtree: true });
+
+// Inicia el proceso
+completarEncuesta();

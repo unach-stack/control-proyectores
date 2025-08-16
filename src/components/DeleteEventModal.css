@@ -1,0 +1,75 @@
+.custom-modal .modal-content {
+    max-width: 600px;
+    margin: auto;
+    border-radius: 10px;
+}
+
+.custom-modal .modal-dialog {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+}
+
+.custom-modal .modal-header {
+    background-color: #f8d7da; /* Color de fondo */
+    color: #721c24; /* Color del texto */
+    border-bottom: none;
+    position: relative; /* Para posicionar el botón de cerrar */
+}
+
+.custom-modal .modal-header .close {
+    position: absolute; /* Asegura que se posicione bien */
+    right: 15px; /* Espacio desde el borde derecho */
+    top: 10px; /* Ajusta la posición vertical */
+    font-size: 1.5rem; /* Tamaño de la X */
+    color: #721c24; /* Color de la X */
+    opacity: 1; /* Asegúrate de que sea visible */
+    background: none; /* Sin fondo */
+    border: none; /* Sin borde */
+    cursor: pointer; /* Cambia el cursor al pasar sobre la X */
+}
+
+.custom-modal .modal-header .close:hover {
+    color: #c82333; /* Color al pasar el mouse */
+}
+
+.custom-modal .modal-body {
+    background-color: #f8f9fa;
+    padding: 20px;
+    max-height: 300px; /* Limita la altura del modal */
+    overflow-y: auto;  /* Añade scroll cuando el contenido exceda la altura */
+}
+
+.custom-modal .modal-footer {
+    background-color: #f1f1f1;
+    justify-content: space-between;
+    padding: 15px;
+}
+
+.custom-modal .btn {
+    padding: 8px 16px;
+}
+
+.custom-modal .table-wrapper {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.custom-modal table {
+    margin-top: 10px;
+}
+
+.custom-modal th, .custom-modal td {
+    text-align: center;
+    vertical-align: middle;
+}
+
+.custom-modal input[type="checkbox"] {
+    transform: scale(1.2);
+}
+
+.custom-modal .table-wrapper {
+    max-height: 200px;
+    overflow-y: auto;  /* Scroll para la tabla */
+}

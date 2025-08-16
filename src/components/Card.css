@@ -1,0 +1,10 @@
+.card {
+    background-color: #fff; /* Fondo blanco */
+    border: 1px solid #ddd; /* Borde gris */
+    border-radius: 5px; /* Bordes redondeados */
+    padding: 20px; /* Espaciado interno */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Sombra sutil */
+    margin: 10px; /* Espaciado entre tarjetas */
+    text-align: center; /* Centrar texto */
+  }
+  

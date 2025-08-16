@@ -1,0 +1,22 @@
+.signin-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 500px; 
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  margin: 100px auto;
+  background-color: #fff;
+}
+
++.google-button-wrapper {
+  position: fixed;
+  bottom: 20px; /* Ajusta según dónde quieras posicionarlo */
+  right: 20px;
+  z-index: 1000; /* Asegura que esté encima de otros elementos */
+  width: 250px;
+}
+
