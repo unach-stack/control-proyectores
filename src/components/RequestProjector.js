@@ -365,37 +365,39 @@ const RequestProjector = () => {
   // Función para deshabilitar días en el calendario
   const tileDisabled = ({ date, view }) => {
     if (view !== 'month') return false;
-    
-    // Calcular el día de la semana (0-6, donde 0 es domingo)
-    const dayOfWeek = date.getDay();
-    
-    // Si es sábado o domingo, deshabilitar
-    if (dayOfWeek === 0 || dayOfWeek === 6) return true;
-    
-    // Obtener la fecha actual
+
     const now = new Date();
-    
-    // Obtener los límites de la semana actual usando solo objetos Date
+    now.setHours(0, 0, 0, 0); // Normalizar a la medianoche para comparaciones
+
+    // Deshabilitar siempre fines de semana
+    const dayOfWeek = date.getDay();
+    if (dayOfWeek === 0 || dayOfWeek === 6) {
+      return true;
+    }
+
+    // Deshabilitar cualquier fecha pasada, incluyendo hoy
+    if (date <= now) {
+      return true;
+    }
+
+    // Lógica para habilitar solo la semana siguiente (lunes a viernes)
     const currentDay = now.getDay(); // 0 (domingo) a 6 (sábado)
-    const daysToMonday = currentDay === 0 ? 6 : currentDay - 1;
     
-    // Crear el lunes de la semana actual
-    const monday = new Date(now);
-    monday.setDate(now.getDate() - daysToMonday);
-    monday.setHours(0, 0, 0, 0);
-    
-    // Crear el viernes de la semana actual
-    const friday = new Date(monday);
-    friday.setDate(monday.getDate() + 4);
-    friday.setHours(23, 59, 59, 999);
-    
-    // Crear una copia de la fecha para no modificar la original
-    const tileDateCopy = new Date(date);
-    tileDateCopy.setHours(12, 0, 0, 0); // Mediodía para evitar problemas de zona horaria
-    
-    // Permitir seleccionar solo fechas de esta semana (de lunes a viernes)
-    // Deshabilitar si está antes del lunes o después del viernes de la semana actual
-    return tileDateCopy < monday || tileDateCopy > friday;
+    // Calcular días hasta el próximo lunes.
+    const daysUntilNextMonday = (7 - currentDay + 1) % 7;
+    const daysToAdd = daysUntilNextMonday === 0 ? 7 : daysUntilNextMonday;
+
+    const nextMonday = new Date(now);
+    nextMonday.setDate(now.getDate() + daysToAdd);
+    nextMonday.setHours(0, 0, 0, 0);
+
+
+    const nextFriday = new Date(nextMonday);
+    nextFriday.setDate(nextMonday.getDate() + 4);
+    nextFriday.setHours(23, 59, 59, 999); // Fin del día viernes
+
+    // Deshabilitar todos los días que no estén en el rango de la próxima semana
+    return date < nextMonday || date > nextFriday;
   };
 
   // Función para el className del tile - SOLUCIÓN DIRECTA
