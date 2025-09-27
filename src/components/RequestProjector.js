@@ -311,8 +311,6 @@ const RequestProjector = () => {
   // Función para manejar el cambio de fecha en el calendario
   const handleDateChange = (newDate) => {
     if (newDate && newDate instanceof Date && !isNaN(newDate)) {
-      setCalendarValue(newDate); // Actualizar el valor del calendario
-      
       // Convertir Date a Temporal.PlainDate
       const temporalDate = dateToTemporal(newDate).toPlainDate();
       // Formato ISO para almacenar (YYYY-MM-DD)
@@ -905,7 +903,7 @@ const RequestProjector = () => {
           
           <Calendar
             onChange={handleDateChange}
-            value={calendarValue}
+            value={null}
             tileDisabled={tileDisabled}
             tileClassName={tileClassName}
             locale="es-ES"
