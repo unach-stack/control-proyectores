@@ -787,7 +787,7 @@ const RequestProjector = () => {
   return (
     <div className="min-h-screen p-2 sm:p-4 md:p-8 bg-gray-50 dark:bg-gray-900">
       {/* Contenedor principal */}
-      <div className="max-w-4xl mx-auto bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4 sm:p-6 md:p-8">
+      <div className="max-w-5xl mx-auto bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-4 sm:p-6 md:p-8">
         {/* Encabezado */}
         <div className="flex flex-col items-center mb-6 sm:mb-8">
           <div className={`${themeStyles.background} p-4 sm:p-6 rounded-full mb-4`}>

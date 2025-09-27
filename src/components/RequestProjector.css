@@ -19,11 +19,20 @@
 }
 
 .react-calendar {
-  @apply w-full max-w-full text-sm sm:text-base bg-white dark:bg-gray-800 text-gray-900 dark:text-white;
+  @apply w-full max-w-full text-sm sm:text-base lg:text-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white;
+}
+
+/* Estilos para hacer el calendario más grande en pantallas de escritorio */
+.react-calendar__navigation__label {
+  @apply font-bold text-lg md:text-xl lg:text-2xl !important;
+}
+
+.react-calendar__month-view__weekdays__weekday abbr {
+  @apply text-xs md:text-sm font-bold text-gray-500 dark:text-gray-400 uppercase no-underline !important;
 }
 
 .react-calendar__tile {
-  @apply h-12 sm:h-16 md:h-20 relative transition-all duration-200 
+  @apply h-16 sm:h-20 md:h-24 relative transition-all duration-200 
          text-gray-700 dark:text-gray-200;
   transition: all 0.1s ease-out !important;
   position: relative;
