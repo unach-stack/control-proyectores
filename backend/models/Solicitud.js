@@ -24,8 +24,20 @@ const solicitudSchema = new mongoose.Schema({
   },
   estado: {
     type: String,
-    enum: ['pendiente', 'aprobado', 'rechazado', 'devuelto'],
+    enum: ['pendiente', 'aprobado', 'rechazado', 'finalizado'],
     default: 'pendiente'
+  },
+  userWantsComments: {
+    type: Boolean,
+    default: false
+  },
+  hasComments: {
+    type: Boolean,
+    default: false
+  },
+  commentsAdded: {
+    type: Boolean,
+    default: false
   }
 }, {
   timestamps: true

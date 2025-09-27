@@ -6,12 +6,14 @@ import { ArrowLeft, Loader, CheckCircle } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { getCurrentThemeStyles } from '../themes/themeConfig';
 import { motion } from 'framer-motion';
+import AdminCommentsModal from './AdminCommentsModal';
 
 const DevolverProyectorDirecto = () => {
   const [solicitud, setSolicitud] = useState(null);
   const [proyector, setProyector] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showCommentsModal, setShowCommentsModal] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { currentTheme } = useTheme();
@@ -50,24 +52,15 @@ const DevolverProyectorDirecto = () => {
   }, [location]);
 
   const handleConfirmarDevolucion = async () => {
-    try {
-      // 1. Cambiar estado del proyector a 'disponible'
-      await authService.api.put(`/api/proyectores/${proyector._id}`, {
-        estado: 'disponible'
-      });
+    setShowCommentsModal(true);
+  };
 
-      // 2. Cambiar estado de la solicitud a 'finalizado'
-      await authService.api.put(`/solicituds/${solicitud._id}`, {
-        estado: 'finalizado'
-      });
+  const handleCommentsModalClose = () => {
+    setShowCommentsModal(false);
+  };
 
-      alertaExito('¡Proyector devuelto correctamente!');
-      navigate('/admin/proyectores'); // Redirigir a la lista de proyectores
-
-    } catch (err) {
-      alertaError('Error al procesar la devolución.');
-      console.error('Error al devolver proyector:', err);
-    }
+  const handleCommentsModalUpdate = () => {
+    navigate('/admin/proyectores');
   };
 
   const handleVolver = () => navigate(-1);
@@ -101,6 +94,13 @@ const DevolverProyectorDirecto = () => {
           </div>
         </motion.div>
       </div>
+      
+      <AdminCommentsModal
+        show={showCommentsModal}
+        onClose={handleCommentsModalClose}
+        solicitud={solicitud}
+        onUpdate={handleCommentsModalUpdate}
+      />
     </div>
   );
 };

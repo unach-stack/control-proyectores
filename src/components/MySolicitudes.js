@@ -7,6 +7,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { getCurrentThemeStyles } from '../themes/themeConfig';
 import { QRCodeCanvas } from 'qrcode.react';
 import { alertaError } from './Alert';
+import UserCommentsModal from './UserCommentsModal';
 
 // Modal para mostrar el QR
 const QRDisplayModal = ({ show, handleClose, qrData, title, themeStyles }) => {
@@ -49,6 +50,8 @@ const MySolicitudes = () => {
   const [error, setError] = useState(null);
   const [showQRModal, setShowQRModal] = useState(false);
   const [qrModalContent, setQrModalContent] = useState({ data: null, title: '' });
+  const [showCommentsModal, setShowCommentsModal] = useState(false);
+  const [selectedSolicitud, setSelectedSolicitud] = useState(null);
 
   const { formatDate } = useTimeZone();
   const { currentTheme } = useTheme();
@@ -114,42 +117,58 @@ const MySolicitudes = () => {
     }
   };
 
+  const handleShowComments = (solicitud) => {
+    setSelectedSolicitud(solicitud);
+    setShowCommentsModal(true);
+  };
+
+  const handleCommentsModalClose = () => {
+    setShowCommentsModal(false);
+    setSelectedSolicitud(null);
+  };
+
+  const fetchMySolicitudes = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await authService.api.get('/mis-solicitudes');
+      
+      // Nuevo filtrado: semana actual + siguiente
+      const now = new Date();
+      const startOfWeek = (date) => {
+        const d = new Date(date);
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+        return new Date(d.setDate(diff));
+      };
+      const mondayThisWeek = startOfWeek(now);
+      mondayThisWeek.setHours(0, 0, 0, 0);
+
+      const sundayNextWeek = new Date(mondayThisWeek);
+      sundayNextWeek.setDate(mondayThisWeek.getDate() + 13);
+      sundayNextWeek.setHours(23, 59, 59, 999);
+
+      const filteredData = response.data.filter(solicitud => {
+          const fechaInicio = new Date(solicitud.fechaInicio);
+          return fechaInicio >= mondayThisWeek && fechaInicio <= sundayNextWeek;
+      });
+
+      const sortedData = filteredData.sort((a, b) => new Date(a.fechaInicio) - new Date(b.fechaInicio)); // Ordenar de más antigua a más nueva
+      setSolicitudes(sortedData);
+
+    } catch (error) {
+      setError('Error al cargar tus solicitudes: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCommentsModalUpdate = () => {
+    // Refrescar las solicitudes después de agregar comentarios
+    fetchMySolicitudes();
+  };
+
   useEffect(() => {
-    const fetchMySolicitudes = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const response = await authService.api.get('/mis-solicitudes');
-        
-        // Nuevo filtrado: semana actual + siguiente
-        const now = new Date();
-        const startOfWeek = (date) => {
-          const d = new Date(date);
-          const day = d.getDay();
-          const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-          return new Date(d.setDate(diff));
-        };
-        const mondayThisWeek = startOfWeek(now);
-        mondayThisWeek.setHours(0, 0, 0, 0);
-
-        const sundayNextWeek = new Date(mondayThisWeek);
-        sundayNextWeek.setDate(mondayThisWeek.getDate() + 13);
-        sundayNextWeek.setHours(23, 59, 59, 999);
-
-        const filteredData = response.data.filter(solicitud => {
-            const fechaInicio = new Date(solicitud.fechaInicio);
-            return fechaInicio >= mondayThisWeek && fechaInicio <= sundayNextWeek;
-        });
-
-        const sortedData = filteredData.sort((a, b) => new Date(a.fechaInicio) - new Date(b.fechaInicio)); // Ordenar de más antigua a más nueva
-        setSolicitudes(sortedData);
-
-      } catch (error) {
-        setError('Error al cargar tus solicitudes: ' + (error.response?.data?.message || error.message));
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchMySolicitudes();
   }, []);
 
@@ -199,6 +218,11 @@ const MySolicitudes = () => {
                       <button onClick={() => handleShowQR(solicitud)} className={`flex items-center gap-2 px-3 py-1.5 text-xs rounded-md bg-gradient-to-r ${themeStyles.gradient} text-white`}><QrCode size={14}/> Ver QR</button>
                     </div>
                   )}
+                  {solicitud.estado === 'finalizado' && solicitud.userWantsComments && !solicitud.commentsAdded && (
+                    <div className="pt-2 flex justify-end">
+                      <button onClick={() => handleShowComments(solicitud)} className={`flex items-center gap-2 px-3 py-1.5 text-xs rounded-md bg-gradient-to-r from-orange-500 to-red-500 text-white`}>💬 Reportar Problemas</button>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -227,6 +251,9 @@ const MySolicitudes = () => {
                       {(solicitud.estado === 'aprobado' || solicitud.estado === 'pendiente') && (
                         <button onClick={() => handleShowQR(solicitud)} className={`flex items-center gap-2 px-3 py-1.5 text-xs rounded-md bg-gradient-to-r ${themeStyles.gradient} text-white`}><QrCode size={14}/> Ver QR</button>
                       )}
+                      {solicitud.estado === 'finalizado' && solicitud.userWantsComments && !solicitud.commentsAdded && (
+                        <button onClick={() => handleShowComments(solicitud)} className={`flex items-center gap-2 px-3 py-1.5 text-xs rounded-md bg-gradient-to-r from-orange-500 to-red-500 text-white`}>💬 Reportar Problemas</button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -235,6 +262,13 @@ const MySolicitudes = () => {
           </div>
         </div>
       )}
+      
+      <UserCommentsModal
+        show={showCommentsModal}
+        onClose={handleCommentsModalClose}
+        solicitud={selectedSolicitud}
+        onUpdate={handleCommentsModalUpdate}
+      />
     </div>
   );
 };

@@ -10,6 +10,7 @@ import {
   Projector,
   Settings,
   FileBarChart,
+  AlertTriangle,
 } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import ThemeSelector from './ThemeSelector';
@@ -140,6 +141,10 @@ const AdminSidebar = () => {
           
           <NavItem path="/admin-proyectores" icon={Projector}>
             Gestión de Proyectores
+          </NavItem>
+          
+          <NavItem path="/faulty-projectors" icon={AlertTriangle}>
+            Proyectores con Problemas
           </NavItem>
           
           <NavItem path="/reports" icon={FileBarChart}>

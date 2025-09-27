@@ -12,12 +12,20 @@ const notificationSchema = new mongoose.Schema({
   },
   tipo: {
     type: String,
-    enum: ['info', 'warning', 'success', 'error'],
+    enum: ['info', 'warning', 'success', 'error', 'comment_request'],
     default: 'info'
   },
   leida: {
     type: Boolean,
     default: false
+  },
+  entidadId: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: false
+  },
+  entidadTipo: {
+    type: String,
+    required: false
   },
   createdAt: {
     type: Date,

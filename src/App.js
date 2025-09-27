@@ -34,6 +34,7 @@ import ThemeSelector from './components/ThemeSelector';
 import ReportGenerator from './components/ReportGenerator';
 import DevolverProyectorDirecto from './components/DevolverProyectorDirecto';
 import UserProfile from './components/UserProfile';
+import FaultyProjectors from './components/FaultyProjectors';
 
 const App = () => {
   const { 
@@ -428,6 +429,14 @@ const App = () => {
                     element={
                       isAuthenticated && isAdmin 
                         ? <AdminProyectores /> 
+                        : <Navigate to="/signin" />
+                    } 
+                  />
+                  <Route 
+                    path="/faulty-projectors" 
+                    element={
+                      isAuthenticated && isAdmin 
+                        ? <FaultyProjectors /> 
                         : <Navigate to="/signin" />
                     } 
                   />

@@ -26,6 +26,7 @@ const fileUpload = require('express-fileupload');
 const FileType = require('file-type');
 const proyectorRoutes = require('./routes/proyectorRoutes');
 const Notification = require('./models/Notification');
+const ProyectorComment = require('./models/ProyectorComment');
 const cleanupFiles = require('./utils/cleanupFiles');
 const cron = require('node-cron');
 const { uploadPdf, cleanupOldFiles, verificarUrlCloudinary } = require('./services/cloudinaryService');
@@ -981,12 +982,14 @@ app.get('/view-document/:id', async (req, res) => {
 // Ruta para crear notificación
 app.post('/api/notifications', verifyToken, isAdmin, async (req, res) => {
   try {
-    const { usuarioId, mensaje, tipo } = req.body;
+    const { usuarioId, mensaje, tipo, entidadId, entidadTipo } = req.body;
     
     const notification = new Notification({
       usuarioId,
       mensaje,
-      tipo
+      tipo,
+      entidadId,
+      entidadTipo
     });
 
     await notification.save();
@@ -1500,12 +1503,14 @@ app.get('/view-document/:id', async (req, res) => {
 // Ruta para crear notificación
 app.post('/api/notifications', verifyToken, isAdmin, async (req, res) => {
   try {
-    const { usuarioId, mensaje, tipo } = req.body;
+    const { usuarioId, mensaje, tipo, entidadId, entidadTipo } = req.body;
     
     const notification = new Notification({
       usuarioId,
       mensaje,
-      tipo
+      tipo,
+      entidadId,
+      entidadTipo
     });
 
     await notification.save();
@@ -1850,6 +1855,71 @@ app.get('/last-theme', async (req, res) => {
   }
 });
 
+// Rutas para comentarios de proyectores
+app.post('/api/proyector-comments', verifyToken, async (req, res) => {
+  try {
+    const { solicitudId, proyectorId, issues, comments } = req.body;
+    
+    const newComment = new ProyectorComment({
+      solicitudId,
+      proyectorId,
+      userId: req.user.id,
+      issues,
+      comments
+    });
+    
+    const savedComment = await newComment.save();
+    
+    // Poblar los datos relacionados
+    const populatedComment = await ProyectorComment.findById(savedComment._id)
+      .populate('proyectorId', 'codigo')
+      .populate('userId', 'nombre email')
+      .populate('solicitudId', 'motivo fechaInicio');
+    
+    res.status(201).json(populatedComment);
+  } catch (error) {
+    console.error('Error al crear comentario:', error);
+    res.status(500).json({ message: 'Error al crear comentario' });
+  }
+});
+
+app.get('/api/proyector-comments', verifyToken, isAdmin, async (req, res) => {
+  try {
+    const comments = await ProyectorComment.find()
+      .populate('proyectorId', 'codigo')
+      .populate('userId', 'nombre email')
+      .populate('solicitudId', 'motivo fechaInicio')
+      .sort({ timestamp: -1 });
+    
+    res.json(comments);
+  } catch (error) {
+    console.error('Error al obtener comentarios:', error);
+    res.status(500).json({ message: 'Error al obtener comentarios' });
+  }
+});
+
+app.put('/api/proyector-comments/:id', verifyToken, isAdmin, async (req, res) => {
+  try {
+    const { status } = req.body;
+    
+    const updatedComment = await ProyectorComment.findByIdAndUpdate(
+      req.params.id,
+      { status },
+      { new: true }
+    ).populate('proyectorId', 'codigo')
+     .populate('userId', 'nombre email')
+     .populate('solicitudId', 'motivo fechaInicio');
+    
+    if (!updatedComment) {
+      return res.status(404).json({ message: 'Comentario no encontrado' });
+    }
+    
+    res.json(updatedComment);
+  } catch (error) {
+    console.error('Error al actualizar comentario:', error);
+    res.status(500).json({ message: 'Error al actualizar comentario' });
+  }
+});
 
 // Conectar a MongoDB
 mongoose.connect(process.env.MONGODB_URI, { 
@@ -2104,12 +2174,14 @@ app.get('/view-document/:id', async (req, res) => {
 // Ruta para crear notificación
 app.post('/api/notifications', verifyToken, isAdmin, async (req, res) => {
   try {
-    const { usuarioId, mensaje, tipo } = req.body;
+    const { usuarioId, mensaje, tipo, entidadId, entidadTipo } = req.body;
     
     const notification = new Notification({
       usuarioId,
       mensaje,
-      tipo
+      tipo,
+      entidadId,
+      entidadTipo
     });
 
     await notification.save();
