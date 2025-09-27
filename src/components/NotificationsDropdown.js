@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Bell } from 'lucide-react';
 import { authService } from '../services/authService';
 
-const NotificationsDropdown = () => {
+const NotificationsDropdown = ({ onNotificationClick }) => {
   const [notifications, setNotifications] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -65,6 +65,17 @@ const NotificationsDropdown = () => {
     }
   };
 
+  const handleNotificationItemClick = (notification) => {
+    if (notification.tipo === 'comment_request' && notification.entidadId) {
+      if (onNotificationClick) {
+        onNotificationClick(notification.entidadId);
+      }
+      // Marcar como leída después de hacer clic
+      handleMarkAsRead(notification._id);
+      setIsOpen(false);
+    }
+  };
+
   return (
     <div className="relative" ref={dropdownRef}>
       <button
@@ -113,32 +124,48 @@ const NotificationsDropdown = () => {
                 No hay notificaciones nuevas
               </p>
             ) : (
-              notifications.map(notification => (
-                <div
-                  key={notification._id}
-                  className={`p-3 rounded-lg ${
-                    notification.tipo === 'success' 
-                      ? 'bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-300' 
-                      : notification.tipo === 'error'
-                      ? 'bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-300'
-                      : notification.tipo === 'warning'
-                      ? 'bg-yellow-50 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
-                      : 'bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'
-                  }`}
-                >
-                  <p className="text-sm dark:text-gray-200">
-                    {notification.mensaje}
-                  </p>
-                  <button
-                    onClick={() => handleMarkAsRead(notification._id)}
-                    className="text-xs text-gray-500 hover:text-gray-700 
-                             dark:text-gray-400 dark:hover:text-gray-300 
-                             mt-2 transition-colors"
+              notifications.map(notification => {
+                const isClickable = notification.tipo === 'comment_request' && notification.entidadId;
+                return (
+                  <div
+                    key={notification._id}
+                    onClick={() => isClickable && handleNotificationItemClick(notification)}
+                    className={`p-3 rounded-lg transition-colors ${
+                      isClickable ? 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700' : ''
+                    } ${
+                      notification.tipo === 'success' 
+                        ? 'bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-300' 
+                        : notification.tipo === 'error'
+                        ? 'bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-300'
+                        : notification.tipo === 'warning'
+                        ? 'bg-yellow-50 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
+                        : 'bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'
+                    }`}
                   >
-                    Marcar como leída
-                  </button>
-                </div>
-              ))
+                    <div className="flex items-start justify-between">
+                      <p className="text-sm dark:text-gray-200 flex-1">
+                        {notification.mensaje}
+                      </p>
+                      {isClickable && (
+                        <span className="ml-2 text-xs text-blue-600 dark:text-blue-400 font-medium">
+                          Click para abrir
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleMarkAsRead(notification._id);
+                      }}
+                      className="text-xs text-gray-500 hover:text-gray-700 
+                               dark:text-gray-400 dark:hover:text-gray-300 
+                               mt-2 transition-colors"
+                    >
+                      Marcar como leída
+                    </button>
+                  </div>
+                );
+              })
             )}
           </div>
         </div>

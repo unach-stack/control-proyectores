@@ -1921,6 +1921,42 @@ app.put('/api/proyector-comments/:id', verifyToken, isAdmin, async (req, res) =>
   }
 });
 
+// Endpoint para que usuarios marquen que agregaron comentarios
+app.put('/solicituds/:id/comments-added', verifyToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Verificar que la solicitud pertenece al usuario
+    const solicitud = await Solicitud.findById(id);
+    if (!solicitud) {
+      return res.status(404).json({ message: 'Solicitud no encontrada' });
+    }
+    
+    if (solicitud.usuarioId.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'No tienes permisos para modificar esta solicitud' });
+    }
+    
+    // Actualizar solo los campos relacionados con comentarios
+    const solicitudActualizada = await Solicitud.findByIdAndUpdate(
+      id,
+      { 
+        hasComments: true,
+        commentsAdded: true
+      },
+      { new: true }
+    );
+    
+    res.json({ 
+      message: 'Comentarios marcados como agregados',
+      solicitud: solicitudActualizada 
+    });
+    
+  } catch (error) {
+    console.error('Error al marcar comentarios como agregados:', error);
+    res.status(500).json({ message: 'Error al actualizar solicitud' });
+  }
+});
+
 // Conectar a MongoDB
 mongoose.connect(process.env.MONGODB_URI, { 
   useNewUrlParser: true, 

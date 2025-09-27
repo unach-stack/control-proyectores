@@ -54,11 +54,7 @@ const UserCommentsModal = ({ show, onClose, solicitud, onUpdate }) => {
       await authService.api.post('/api/proyector-comments', commentData);
 
       // Actualizar la solicitud para marcar que se agregaron comentarios
-      await authService.api.put(`/solicituds/${solicitud._id}`, {
-        estado: 'finalizado',
-        hasComments: true,
-        commentsAdded: true
-      });
+      await authService.api.put(`/solicituds/${solicitud._id}/comments-added`);
 
       toast.success('¡Comentarios enviados correctamente!', {
         duration: 4000,

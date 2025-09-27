@@ -35,6 +35,7 @@ import ReportGenerator from './components/ReportGenerator';
 import DevolverProyectorDirecto from './components/DevolverProyectorDirecto';
 import UserProfile from './components/UserProfile';
 import FaultyProjectors from './components/FaultyProjectors';
+import UserCommentsModal from './components/UserCommentsModal';
 
 const App = () => {
   const { 
@@ -54,6 +55,8 @@ const App = () => {
   const [tokenTimeLeft, setTokenTimeLeft] = React.useState(15 * 60); // 15 minutos en segundos
   const [showWarning, setShowWarning] = React.useState(false);
   const [showScanner, setShowScanner] = useState(false);
+  const [showUserCommentsModal, setShowUserCommentsModal] = useState(false);
+  const [selectedSolicitudForComment, setSelectedSolicitudForComment] = useState(null);
 
   const handleProfileUpdate = useCallback(async (data) => {
     try {
@@ -65,6 +68,27 @@ const App = () => {
       throw error;
     }
   }, []);
+
+  const handleNotificationClick = async (solicitudId) => {
+    try {
+      const response = await authService.api.get(`/solicitudes/id/${solicitudId}`);
+      setSelectedSolicitudForComment(response.data);
+      setShowUserCommentsModal(true);
+    } catch (error) {
+      console.error('Error fetching solicitud for comments modal:', error);
+      alertaError('No se pudo cargar la solicitud para dejar comentarios.');
+    }
+  };
+
+  const handleCloseCommentsModal = () => {
+    setShowUserCommentsModal(false);
+    setSelectedSolicitudForComment(null);
+  };
+
+  const handleCommentsUpdated = () => {
+    // Potentially refresh some data here if needed, e.g., MySolicitudes
+    console.log('Comments updated, modal closed.');
+  };
 
   React.useEffect(() => {
     // Agregar logs para depuración
@@ -321,7 +345,7 @@ const App = () => {
                         )}
 
                         {/* Notificaciones */}
-                        <NotificationsDropdown />
+                        <NotificationsDropdown onNotificationClick={handleNotificationClick} />
 
                         {/* Botón de cerrar sesión */}
                         <button 
@@ -491,6 +515,18 @@ const App = () => {
                     isOpen={showGradeGroupModal}
                     onClose={() => setShowGradeGroupModal(false)}
                     onSubmit={handleProfileUpdate}
+                  />
+                )}
+
+                {showUserCommentsModal && selectedSolicitudForComment && (
+                  <UserCommentsModal
+                    show={showUserCommentsModal}
+                    onClose={handleCloseCommentsModal}
+                    solicitud={selectedSolicitudForComment}
+                    onUpdate={() => {
+                      handleCloseCommentsModal();
+                      handleCommentsUpdated();
+                    }}
                   />
                 )}
 
