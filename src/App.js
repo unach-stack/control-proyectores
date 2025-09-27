@@ -32,6 +32,8 @@ import QRHistory from './components/QRHistory';
 import { ThemeProvider } from './contexts/ThemeContext';
 import ThemeSelector from './components/ThemeSelector';
 import ReportGenerator from './components/ReportGenerator';
+import DevolverProyectorDirecto from './components/DevolverProyectorDirecto';
+import UserProfile from './components/UserProfile';
 
 const App = () => {
   const { 
@@ -463,6 +465,8 @@ const App = () => {
                     } 
                   />
 
+                  <Route path="/devolver-proyector" element={<DevolverProyectorDirecto />} />
+                  <Route path="/user-profile" element={<UserProfile />} />
                   <Route path="*" element={<Navigate to="/signin" />} />
                 </Routes>
 

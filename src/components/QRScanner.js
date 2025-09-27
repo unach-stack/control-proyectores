@@ -142,46 +142,50 @@ const QRScanner = ({ onScanSuccess, onClose }) => {
 
   const handleScan = (decodedText) => {
     if (!decodedText) return;
-    
-    console.log("Texto decodificado del QR:", decodedText);
-    
+
+    // Detener el escáner inmediatamente para evitar múltiples lecturas
+    if (scannerRef.current) {
+      scannerRef.current.stop().catch(err => console.error("Error al detener el escáner:", err));
+    }
+
     try {
-      // Intentar parsear el texto como JSON
       let qrData;
       try {
         qrData = JSON.parse(decodedText);
       } catch (e) {
-        // Si no es JSON válido, usar el texto tal cual
-        qrData = { solicitudId: decodedText };
+        // Compatibilidad con QR antiguos que solo contienen el ID
+        qrData = { type: 'asignacion', solicitudId: decodedText };
       }
-      
-      // Verificar que tenga la estructura esperada o al menos un ID
-      if (qrData && (qrData.solicitudId || qrData.id)) {
-        const solicitudId = qrData.solicitudId || qrData.id;
-        console.log("QR escaneado correctamente:", qrData);
-        
-        // Detener el escáner
-        if (scannerRef.current) {
-          try {
-            scannerRef.current.stop();
-          } catch (err) {
-            // Silenciar errores al detener
-          }
-        }
-        
-        // Notificar éxito solo una vez
+
+      // Validar la estructura del QR según el tipo
+      let isValid = false;
+      if (qrData.type === 'devolucion' && qrData.solicitudId && qrData.proyectorId) {
+        isValid = true;
+      } else if (qrData.type === 'asignacion' && qrData.solicitudId) {
+        isValid = true;
+      } else if (!qrData.type && qrData.solicitudId) {
+        // Asumir asignación si el tipo no está presente pero hay un solicitudId
+        qrData.type = 'asignacion';
+        isValid = true;
+      }
+
+      if (isValid) {
+        console.log("QR válido escaneado:", qrData);
         alertaExito('Código QR escaneado correctamente');
-        
-        // Llamar al callback con los datos
+        // Llamar al callback con los datos completos
         setTimeout(() => {
           onScanSuccess(qrData);
-        }, 1000);
+        }, 500); // Un pequeño retraso para que el usuario vea la alerta
       } else {
-        alertaError('El código QR no contiene datos válidos de solicitud');
+        console.error("QR inválido o con formato incorrecto:", qrData);
+        alertaError('El código QR no tiene un formato válido.');
+        // Opcional: reiniciar el escáner para un nuevo intento
+        setTimeout(() => initializeScanner(), 2000);
       }
     } catch (error) {
       console.error("Error al procesar el código QR:", error);
-      alertaError('Error al procesar el código QR. Formato inválido.');
+      alertaError('Error al procesar el código QR.');
+      setTimeout(() => initializeScanner(), 2000);
     }
   };
 

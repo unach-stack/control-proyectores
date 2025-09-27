@@ -6,14 +6,20 @@ const UserHeader = ({ user, userPicture, onLogout }) => {
   const [showScanner, setShowScanner] = useState(false);
 
   const handleScanSuccess = (qrData) => {
-    // Aquí puedes implementar la lógica para procesar los datos del QR
-    // Por ejemplo, redirigir a la página de asignación con los datos pre-cargados
     console.log('Datos del QR escaneado:', qrData);
-    
-    // Ejemplo: Redirigir a la página de solicitudes con el ID de la solicitud
-    window.location.href = `/user-requests?solicitudId=${qrData.solicitudId}&usuarioId=${qrData.usuarioId}`;
-    
     setShowScanner(false);
+
+    // Lógica de redirección basada en el tipo de QR
+    if (qrData.type === 'devolucion') {
+      // Redirigir a la nueva página de devolución
+      window.location.href = `/devolver-proyector?solicitudId=${qrData.solicitudId}&proyectorId=${qrData.proyectorId}`;
+    } else if (qrData.type === 'asignacion') {
+      // Redirigir a la página de asignación existente
+      window.location.href = `/asignar-proyector-directo?solicitudId=${qrData.solicitudId}`;
+    } else {
+      // Fallback por si el tipo no es reconocido
+      alertaError('Tipo de QR no reconocido.');
+    }
   };
 
   return (
