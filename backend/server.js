@@ -40,10 +40,8 @@ const ADMIN_EMAILS = [
   'diocelyne.arrevillaga@unach.mx',
   'karol.carrazco@unach.mx',
   'karen.portillo@unach.mx',
-  'pedro.escobar@unach.mx',
   'brianes666@gmail.com',
   'brianfloresxxd@gmail.com',
-  'nuevo.correo@unach.mx'
 ];
 
 if (!process.env.CLIENT_ID || !process.env.JWT_SECRET) {

@@ -62,7 +62,6 @@ const ThemeSelector = () => {
         darkMode // Incluir el darkMode actual
       });
       
-      toast.success('Tema actualizado correctamente');
     } catch (error) {
       console.error('Error al cambiar el tema:', error);
       toast.error('Error al cambiar el tema');
