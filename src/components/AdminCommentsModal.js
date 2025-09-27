@@ -17,7 +17,23 @@ const AdminCommentsModal = ({ show, onClose, solicitud, onUpdate }) => {
     try {
       setLoading(true);
 
-      // Actualizar la solicitud con el flag de comentarios
+      // Obtener el ID del proyector de manera más robusta
+      const proyectorId = solicitud.proyectorId?._id || solicitud.proyectorId;
+      
+      if (!proyectorId) {
+        throw new Error('No se pudo obtener el ID del proyector');
+      }
+
+      console.log('Actualizando proyector:', proyectorId, 'a estado: disponible');
+
+      // 1. Cambiar estado del proyector a 'disponible'
+      const proyectorResponse = await authService.api.put(`/api/proyectores/${proyectorId}`, {
+        estado: 'disponible'
+      });
+
+      console.log('Proyector actualizado:', proyectorResponse.data);
+
+      // 2. Actualizar la solicitud con el flag de comentarios
       await authService.api.put(`/solicituds/${solicitud._id}`, {
         estado: 'finalizado',
         userWantsComments: userWantsComments

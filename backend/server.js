@@ -1202,17 +1202,22 @@ app.post('/api/proyectores', verifyToken, async (req, res) => {
 app.put('/api/proyectores/:id', verifyToken, isAdmin, async (req, res) => {
   try {
     const { estado } = req.body;
+    const { id } = req.params;
+    
+    console.log('Actualizando proyector:', { id, estado, user: req.user.email });
     
     const proyectorActualizado = await Proyector.findByIdAndUpdate(
-      req.params.id,
+      id,
       { estado },
       { new: true }
     );
     
     if (!proyectorActualizado) {
+      console.log('Proyector no encontrado:', id);
       return res.status(404).json({ message: 'Proyector no encontrado' });
     }
     
+    console.log('Proyector actualizado exitosamente:', proyectorActualizado);
     res.json(proyectorActualizado);
   } catch (error) {
     console.error('Error al actualizar proyector:', error);
@@ -1723,17 +1728,22 @@ app.post('/api/proyectores', verifyToken, async (req, res) => {
 app.put('/api/proyectores/:id', verifyToken, isAdmin, async (req, res) => {
   try {
     const { estado } = req.body;
+    const { id } = req.params;
+    
+    console.log('Actualizando proyector:', { id, estado, user: req.user.email });
     
     const proyectorActualizado = await Proyector.findByIdAndUpdate(
-      req.params.id,
+      id,
       { estado },
       { new: true }
     );
     
     if (!proyectorActualizado) {
+      console.log('Proyector no encontrado:', id);
       return res.status(404).json({ message: 'Proyector no encontrado' });
     }
     
+    console.log('Proyector actualizado exitosamente:', proyectorActualizado);
     res.json(proyectorActualizado);
   } catch (error) {
     console.error('Error al actualizar proyector:', error);
@@ -2430,17 +2440,22 @@ app.post('/api/proyectores', verifyToken, async (req, res) => {
 app.put('/api/proyectores/:id', verifyToken, isAdmin, async (req, res) => {
   try {
     const { estado } = req.body;
+    const { id } = req.params;
+    
+    console.log('Actualizando proyector:', { id, estado, user: req.user.email });
     
     const proyectorActualizado = await Proyector.findByIdAndUpdate(
-      req.params.id,
+      id,
       { estado },
       { new: true }
     );
     
     if (!proyectorActualizado) {
+      console.log('Proyector no encontrado:', id);
       return res.status(404).json({ message: 'Proyector no encontrado' });
     }
     
+    console.log('Proyector actualizado exitosamente:', proyectorActualizado);
     res.json(proyectorActualizado);
   } catch (error) {
     console.error('Error al actualizar proyector:', error);

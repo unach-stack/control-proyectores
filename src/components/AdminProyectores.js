@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { authService } from '../services/authService';
 import { Projector, Edit2, Trash2, Plus, Search, X, Check, AlertTriangle } from 'lucide-react';
 import { alertaExito, alertaError } from './Alert';
@@ -24,6 +25,7 @@ const AdminProyectores = () => {
     estado: 'disponible'
   });
   
+  const location = useLocation();
   // Obtener el tema actual
   const { currentTheme } = useTheme();
   const themeStyles = getCurrentThemeStyles(currentTheme);
@@ -31,6 +33,13 @@ const AdminProyectores = () => {
   useEffect(() => {
     fetchProyectores();
   }, []);
+
+  // Recargar proyectores cuando se navega a esta página
+  useEffect(() => {
+    if (location.pathname === '/admin-proyectores') {
+      fetchProyectores();
+    }
+  }, [location.pathname]);
 
   const fetchProyectores = async () => {
     try {
