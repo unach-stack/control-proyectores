@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Clock, Calendar, Copy } from 'lucide-react';
-import { alertaExito, alertaPersonalizada } from './Alert';
+import { alertaExito, alertaPersonalizada, alertaAdvertencia } from './Alert';
 import { useTheme } from '../contexts/ThemeContext';
 import { getCurrentThemeStyles } from '../themes/themeConfig';
 
@@ -10,6 +10,33 @@ const TimeSelectionModal = ({ show, handleClose, selectedDates, handleConfirm })
   const [timeSlots, setTimeSlots] = useState({});
   const [useSameTime, setUseSameTime] = useState(false);
   const [templateTime, setTemplateTime] = useState({ start: '', end: '' });
+
+  // --- INICIO DE LÓGICA DE VALIDACIÓN ---
+
+  // Función para obtener la hora mínima de inicio para una fecha dada
+  const getMinStartTimeForDate = (dateStr) => {
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+
+    if (dateStr === todayStr) {
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const currentTime = `${hours}:${minutes}`;
+      // La hora mínima es la actual, pero no antes de las 07:00
+      return currentTime > '07:00' ? currentTime : '07:00';
+    }
+    // Para días futuros, la hora mínima es a las 07:00
+    return '07:00';
+  };
+
+  // Determinar la hora mínima para la plantilla
+  // Si alguna de las fechas es hoy, la plantilla debe respetar la hora actual
+  const today = new Date().toISOString().split('T')[0];
+  const isTodaySelected = selectedDates.includes(today);
+  const templateMinTime = isTodaySelected ? getMinStartTimeForDate(today) : '07:00';
+
+  // --- FIN DE LÓGICA DE VALIDACIÓN ---
+
 
   // Manejar cambio en horario plantilla
   const handleTemplateChange = (field, value) => {
@@ -65,12 +92,19 @@ const TimeSelectionModal = ({ show, handleClose, selectedDates, handleConfirm })
   };
 
   const onConfirm = () => {
-    const allValid = Object.values(timeSlots).every(slot =>
-      slot.start && slot.end
-    );
+    const allValid = Object.values(timeSlots).every(slot => {
+      if (!slot.start || !slot.end || slot.start >= slot.end) {
+        return false;
+      }
+      // Validar que la hora esté dentro del rango permitido
+      if (slot.start < '07:00' || slot.start > '22:00' || slot.end > '22:00') {
+        return false;
+      }
+      return true;
+    });
   
     if (!allValid) {
-      alert("Por favor, asegúrate de que todas las horas de inicio y fin están establecidas.");
+      alertaAdvertencia("¡Revisa el horario! Solo podemos agendar citas de 7:00 a.m. a 10:00 p.m. y recuerda que la hora final debe ser mayor a la inicial.");
       return;
     }
   
@@ -129,6 +163,8 @@ const TimeSelectionModal = ({ show, handleClose, selectedDates, handleConfirm })
                   <input
                     type="time"
                     value={templateTime.start}
+                    min={templateMinTime}
+                    max="22:00"
                     onChange={(e) => handleTemplateChange('start', e.target.value)}
                     className="block w-full rounded-lg border-gray-300 dark:border-gray-600 
                              bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100
@@ -145,6 +181,8 @@ const TimeSelectionModal = ({ show, handleClose, selectedDates, handleConfirm })
                   <input
                     type="time"
                     value={templateTime.end}
+                    min={templateTime.start}
+                    max="22:00"
                     onChange={(e) => handleTemplateChange('end', e.target.value)}
                     className="block w-full rounded-lg border-gray-300 dark:border-gray-600 
                              bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100
@@ -192,6 +230,9 @@ const TimeSelectionModal = ({ show, handleClose, selectedDates, handleConfirm })
                       </div>
                       <input
                         type="time"
+                        value={timeSlots[date]?.start || ''}
+                        min={getMinStartTimeForDate(date)}
+                        max="22:00"
                         className="block w-full rounded-lg 
                                  border-gray-300 dark:border-gray-600 
                                  bg-white dark:bg-gray-700
@@ -223,6 +264,9 @@ const TimeSelectionModal = ({ show, handleClose, selectedDates, handleConfirm })
                       </div>
                       <input
                         type="time"
+                        value={timeSlots[date]?.end || ''}
+                        min={timeSlots[date]?.start || getMinStartTimeForDate(date)}
+                        max="22:00"
                         className="block w-full rounded-lg 
                                  border-gray-300 dark:border-gray-600 
                                  bg-white dark:bg-gray-700
