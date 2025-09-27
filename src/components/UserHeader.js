@@ -5,23 +5,6 @@ import QRScanner from './QRScanner';
 const UserHeader = ({ user, userPicture, onLogout }) => {
   const [showScanner, setShowScanner] = useState(false);
 
-  const handleScanSuccess = (qrData) => {
-    console.log('Datos del QR escaneado:', qrData);
-    setShowScanner(false);
-
-    // Lógica de redirección basada en el tipo de QR
-    if (qrData.type === 'devolucion') {
-      // Redirigir a la nueva página de devolución
-      window.location.href = `/devolver-proyector?solicitudId=${qrData.solicitudId}&proyectorId=${qrData.proyectorId}`;
-    } else if (qrData.type === 'asignacion') {
-      // Redirigir a la página de asignación existente
-      window.location.href = `/asignar-proyector-directo?solicitudId=${qrData.solicitudId}`;
-    } else {
-      // Fallback por si el tipo no es reconocido
-      alertaError('Tipo de QR no reconocido.');
-    }
-  };
-
   return (
     <div className="flex flex-wrap items-center justify-between gap-2 mb-4 
                     bg-gray-200 dark:bg-gray-800 p-3 rounded-lg shadow-sm
@@ -69,7 +52,6 @@ const UserHeader = ({ user, userPicture, onLogout }) => {
       {/* Modal de escáner QR */}
       {showScanner && (
         <QRScanner 
-          onScanSuccess={handleScanSuccess} 
           onClose={() => setShowScanner(false)} 
         />
       )}

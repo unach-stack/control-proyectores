@@ -80,7 +80,7 @@ const AsignarProyectorModal = ({ show, onClose, solicitud, onAsignar }) => {
       onAsignar(proyector);
       onClose();
     } catch (error) {
-      console.error('Error al asignar proyector:', error);
+      console.error('Error al xtor:', error);
       toast.error(
         error.response?.status === 403 
           ? 'No tienes permisos para realizar esta acción'

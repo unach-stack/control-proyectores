@@ -2,8 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { alertaError, alertaExito } from './Alert';
 import { alertService } from '../services/alertService';
+import { useNavigate } from 'react-router-dom';
 
-const QRScanner = ({ onScanSuccess, onClose }) => {
+const QRScanner = ({ onClose }) => {
+  const navigate = useNavigate();
   const [startScan, setStartScan] = useState(true);
   const [cameraPermission, setCameraPermission] = useState(null);
   const [cameraError, setCameraError] = useState(null);
@@ -13,20 +15,13 @@ const QRScanner = ({ onScanSuccess, onClose }) => {
   const containerRef = useRef(null);
 
   useEffect(() => {
-    // Limpiar alertas al montar el componente
     alertService.clearRecentAlerts();
-    
-    // Verificar permisos de cámara al montar
     checkCameraPermission();
-    
-    // Limpiar al desmontar
     return () => {
       if (scannerRef.current) {
         try {
           scannerRef.current.stop();
-        } catch (err) {
-          // Silenciar errores al detener
-        }
+        } catch (err) { /* Silenciar */ }
       }
     };
   }, []);
@@ -142,7 +137,6 @@ const QRScanner = ({ onScanSuccess, onClose }) => {
 
   const handleScan = (decodedText) => {
     if (!decodedText) return;
-    console.log("1. Texto decodificado:", decodedText);
 
     if (scannerRef.current) {
       scannerRef.current.stop().catch(err => console.error("Error al detener el escáner:", err));
@@ -152,40 +146,33 @@ const QRScanner = ({ onScanSuccess, onClose }) => {
       let qrData;
       try {
         qrData = JSON.parse(decodedText);
-        console.log("2. Datos parseados como JSON:", qrData);
       } catch (e) {
-        console.log("2a. No es JSON válido, tratando como QR antiguo.");
         qrData = { type: 'asignacion', solicitudId: decodedText };
       }
 
-      console.log("3. Tipo de QR detectado:", qrData.type);
-
       let isValid = false;
       if (qrData.type === 'devolucion' && qrData.solicitudId && qrData.proyectorId) {
-        console.log("4. El QR es de tipo 'devolucion' y es válido.");
         isValid = true;
       } else if (qrData.type === 'asignacion' && qrData.solicitudId) {
-        console.log("4. El QR es de tipo 'asignacion' y es válido.");
-        isValid = true;
-      } else if (!qrData.type && qrData.solicitudId) {
-        console.log("4. El QR no tiene tipo, se asume 'asignacion'.");
-        qrData.type = 'asignacion';
         isValid = true;
       }
 
       if (isValid) {
         alertaExito('Código QR escaneado correctamente');
-        console.log("5. Llamando a onScanSuccess con:", qrData);
         setTimeout(() => {
-          onScanSuccess(qrData);
+          onClose(); // Cierra el modal del scanner
+          // Navega a la página correcta
+          if (qrData.type === 'devolucion') {
+            navigate(`/devolver-proyector?solicitudId=${qrData.solicitudId}&proyectorId=${qrData.proyectorId}`);
+          } else {
+            navigate(`/asignar-directo?solicitudId=${qrData.solicitudId}`);
+          }
         }, 500);
       } else {
-        console.error("4b. El QR no pasó ninguna validación.", qrData);
         alertaError('El código QR no tiene un formato válido.');
         setTimeout(() => initializeScanner(), 2000);
       }
     } catch (error) {
-      console.error("Error general al procesar el código QR:", error);
       alertaError('Error al procesar el código QR.');
       setTimeout(() => initializeScanner(), 2000);
     }
