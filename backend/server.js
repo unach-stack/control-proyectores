@@ -4,7 +4,7 @@ require('dotenv').config();
 //   CLIENT_ID: process.env.CLIENT_ID ? 'Presente' : 'Falta',
 //   JWT_SECRET: process.env.JWT_SECRET ? 'Presente' : 'Falta'
 // });
-
+//
 const express = require('express');
 const { OAuth2Client } = require('google-auth-library');
 const cookieParser = require('cookie-parser');
@@ -64,7 +64,7 @@ app.use(cookieParser());
 app.use(cors({
   origin: [
     process.env.FRONTEND_URL,
-    'https://control-proyectores-unach.vercel.app',
+    'https://control-proyectores-silk.vercel.app/signin',
     'http://localhost:3000',
     'http://localhost:3001'
   ],
