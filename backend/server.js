@@ -63,8 +63,8 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(cors({
   origin: [
-    process.env.FRONTEND_URL,
-    'https://control-proyectores-silk.vercel.app/signin',
+    process.env.FRONTEND_URL?.trim(), // por si acaso
+    'https://control-proyectores-silk.vercel.app',
     'http://localhost:3000',
     'http://localhost:3001'
   ],
