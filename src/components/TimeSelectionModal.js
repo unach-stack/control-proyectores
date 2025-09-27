@@ -92,6 +92,16 @@ const TimeSelectionModal = ({ show, handleClose, selectedDates, handleConfirm })
   };
 
   const onConfirm = () => {
+    // Primero, verificar que se hayan establecido horarios para todas las fechas
+    if (Object.keys(timeSlots).length !== selectedDates.length) {
+      alertaPersonalizada(
+        '¡Horarios Incompletos!',
+        'Por favor, establece un horario para todas las fechas seleccionadas.',
+        'error'
+      );
+      return;
+    }
+
     const allValid = Object.values(timeSlots).every(slot => {
       if (!slot.start || !slot.end || slot.start >= slot.end) {
         return false;
@@ -104,7 +114,16 @@ const TimeSelectionModal = ({ show, handleClose, selectedDates, handleConfirm })
     });
   
     if (!allValid) {
-      alertaAdvertencia("¡Revisa el horario! Solo podemos agendar citas de 7:00 a.m. a 10:00 p.m. y recuerda que la hora final debe ser mayor a la inicial.");
+      alertaPersonalizada(
+        '¡Revisa los Horarios!',
+        <div>
+          <p>Por favor, ajusta las horas seleccionadas.</p>
+          <p className="mt-2">
+            Recuerda que el rango es de <strong className="text-blue-600 dark:text-blue-400">7:00 AM a 10:00 PM</strong> y la hora de fin debe ser posterior a la de inicio.
+          </p>
+        </div>,
+        'error'
+      );
       return;
     }
   

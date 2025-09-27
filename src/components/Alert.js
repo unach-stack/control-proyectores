@@ -67,8 +67,8 @@ const Modal = ({ isOpen, onClose, title, message, icon, confirmButtonText, theme
 
   const iconComponents = {
     success: (
-      <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mb-4 mx-auto">
-        <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400 animate-bounce" />
+      <div className={`w-16 h-16 rounded-full bg-gradient-to-br ${gradient} flex items-center justify-center mb-4 mx-auto`}>
+        <CheckCircle className="w-8 h-8 text-white animate-bounce" />
       </div>
     ),
     error: (
@@ -77,8 +77,8 @@ const Modal = ({ isOpen, onClose, title, message, icon, confirmButtonText, theme
       </div>
     ),
     info: (
-      <div className="w-16 h-16 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mb-4 mx-auto">
-        <Info className="w-8 h-8 text-blue-600 dark:text-blue-400 animate-pulse" />
+      <div className={`w-16 h-16 rounded-full bg-gradient-to-br ${gradient} flex items-center justify-center mb-4 mx-auto`}>
+        <Info className="w-8 h-8 text-white animate-pulse" />
       </div>
     ),
     warning: (
@@ -114,9 +114,9 @@ const Modal = ({ isOpen, onClose, title, message, icon, confirmButtonText, theme
               {iconComponents[icon]}
               
               <div className="text-center mb-6">
-                <p className="text-sm text-gray-600 dark:text-gray-300">
+                <div className="text-sm text-gray-600 dark:text-gray-300">
                   {message}
-                </p>
+                </div>
               </div>
             </div>
             
