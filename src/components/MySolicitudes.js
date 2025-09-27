@@ -68,7 +68,7 @@ const MySolicitudes = () => {
       qrData = JSON.stringify({
         type: 'devolucion',
         solicitudId: solicitud._id,
-        proyectorId: solicitud.proyectorId._id || solicitud.proyectorId // Asumir que puede ser objeto o string
+        proyectorId: solicitud.proyectorId._id || solicitud.proyectorId
       });
       qrTitle = 'Código QR para Devolución';
     } else if (solicitud.estado === 'pendiente') {
@@ -91,8 +91,30 @@ const MySolicitudes = () => {
       setError(null);
       try {
         const response = await authService.api.get('/mis-solicitudes');
-        const sortedData = response.data.sort((a, b) => new Date(b.fechaInicio) - new Date(a.fechaInicio));
+        
+        // Nuevo filtrado: semana actual + siguiente
+        const now = new Date();
+        const startOfWeek = (date) => {
+          const d = new Date(date);
+          const day = d.getDay();
+          const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+          return new Date(d.setDate(diff));
+        };
+        const mondayThisWeek = startOfWeek(now);
+        mondayThisWeek.setHours(0, 0, 0, 0);
+
+        const sundayNextWeek = new Date(mondayThisWeek);
+        sundayNextWeek.setDate(mondayThisWeek.getDate() + 13);
+        sundayNextWeek.setHours(23, 59, 59, 999);
+
+        const filteredData = response.data.filter(solicitud => {
+            const fechaInicio = new Date(solicitud.fechaInicio);
+            return fechaInicio >= mondayThisWeek && fechaInicio <= sundayNextWeek;
+        });
+
+        const sortedData = filteredData.sort((a, b) => new Date(a.fechaInicio) - new Date(b.fechaInicio)); // Ordenar de más antigua a más nueva
         setSolicitudes(sortedData);
+
       } catch (error) {
         setError('Error al cargar tus solicitudes: ' + (error.response?.data?.message || error.message));
       } finally {

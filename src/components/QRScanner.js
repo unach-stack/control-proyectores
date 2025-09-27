@@ -269,7 +269,7 @@ const QRScanner = ({ onScanSuccess, onClose }) => {
             Cerrar
           </button>
         </div>
-      </div>
+      </div>  
     </div>
   );
 };
