@@ -6,6 +6,7 @@ import { useTimeZone } from '../contexts/TimeZoneContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { getCurrentThemeStyles } from '../themes/themeConfig';
 import { QRCodeCanvas } from 'qrcode.react';
+import { alertaError } from './Alert';
 
 // Modal para mostrar el QR
 const QRDisplayModal = ({ show, handleClose, qrData, title, themeStyles }) => {
@@ -60,7 +61,35 @@ const MySolicitudes = () => {
     return date.toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
   };
 
-  const handleShowQR = (solicitud) => {
+  const handleShowQR = async (solicitud) => {
+    // Si la solicitud está aprobada pero no tenemos el proyectorId, lo buscamos.
+    if (solicitud.estado === 'aprobado' && !solicitud.proyectorId) {
+      try {
+        setQrModalContent({ data: null, title: 'Cargando QR...' });
+        setShowQRModal(true);
+
+        const response = await authService.api.get(`/solicitudes/id/${solicitud._id}`);
+        const fullSolicitud = response.data;
+
+        if (fullSolicitud.proyectorId) {
+          const qrData = JSON.stringify({
+            type: 'devolucion',
+            solicitudId: fullSolicitud._id,
+            proyectorId: fullSolicitud.proyectorId._id || fullSolicitud.proyectorId
+          });
+          setQrModalContent({ data: qrData, title: 'Código QR para Devolución' });
+        } else {
+          setShowQRModal(false);
+          alertaError('Error: No se encontró proyector asignado a esta solicitud.');
+        }
+      } catch (error) {
+        setShowQRModal(false);
+        alertaError('No se pudieron obtener los detalles para el QR.');
+      }
+      return;
+    }
+
+    // Lógica original para solicitudes pendientes o ya completas
     let qrData = null;
     let qrTitle = '';
 

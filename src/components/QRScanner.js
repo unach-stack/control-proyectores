@@ -142,8 +142,8 @@ const QRScanner = ({ onScanSuccess, onClose }) => {
 
   const handleScan = (decodedText) => {
     if (!decodedText) return;
+    console.log("1. Texto decodificado:", decodedText);
 
-    // Detener el escáner inmediatamente para evitar múltiples lecturas
     if (scannerRef.current) {
       scannerRef.current.stop().catch(err => console.error("Error al detener el escáner:", err));
     }
@@ -152,38 +152,40 @@ const QRScanner = ({ onScanSuccess, onClose }) => {
       let qrData;
       try {
         qrData = JSON.parse(decodedText);
+        console.log("2. Datos parseados como JSON:", qrData);
       } catch (e) {
-        // Compatibilidad con QR antiguos que solo contienen el ID
+        console.log("2a. No es JSON válido, tratando como QR antiguo.");
         qrData = { type: 'asignacion', solicitudId: decodedText };
       }
 
-      // Validar la estructura del QR según el tipo
+      console.log("3. Tipo de QR detectado:", qrData.type);
+
       let isValid = false;
       if (qrData.type === 'devolucion' && qrData.solicitudId && qrData.proyectorId) {
+        console.log("4. El QR es de tipo 'devolucion' y es válido.");
         isValid = true;
       } else if (qrData.type === 'asignacion' && qrData.solicitudId) {
+        console.log("4. El QR es de tipo 'asignacion' y es válido.");
         isValid = true;
       } else if (!qrData.type && qrData.solicitudId) {
-        // Asumir asignación si el tipo no está presente pero hay un solicitudId
+        console.log("4. El QR no tiene tipo, se asume 'asignacion'.");
         qrData.type = 'asignacion';
         isValid = true;
       }
 
       if (isValid) {
-        console.log("QR válido escaneado:", qrData);
         alertaExito('Código QR escaneado correctamente');
-        // Llamar al callback con los datos completos
+        console.log("5. Llamando a onScanSuccess con:", qrData);
         setTimeout(() => {
           onScanSuccess(qrData);
-        }, 500); // Un pequeño retraso para que el usuario vea la alerta
+        }, 500);
       } else {
-        console.error("QR inválido o con formato incorrecto:", qrData);
+        console.error("4b. El QR no pasó ninguna validación.", qrData);
         alertaError('El código QR no tiene un formato válido.');
-        // Opcional: reiniciar el escáner para un nuevo intento
         setTimeout(() => initializeScanner(), 2000);
       }
     } catch (error) {
-      console.error("Error al procesar el código QR:", error);
+      console.error("Error general al procesar el código QR:", error);
       alertaError('Error al procesar el código QR.');
       setTimeout(() => initializeScanner(), 2000);
     }

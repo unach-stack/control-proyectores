@@ -405,6 +405,24 @@ app.get('/solicitudes', verifyToken, async (req, res) => {
   }
 });
 
+// NUEVA RUTA para obtener una solicitud por ID
+app.get('/solicitudes/id/:id', verifyToken, async (req, res) => {
+  try {
+    const solicitud = await Solicitud.findById(req.params.id)
+      .populate('usuarioId')
+      .populate('proyectorId');
+
+    if (!solicitud) {
+      return res.status(404).json({ message: 'Solicitud no encontrada' });
+    }
+
+    res.json(solicitud);
+  } catch (error) {
+    console.error('Error al obtener solicitud por ID:', error);
+    res.status(500).json({ message: 'Error al obtener la solicitud' });
+  }
+});
+
 app.post('/solicitar-proyector', verifyToken, async (req, res) => {
   try {
     const { fechaInicio, fechaFin, motivo, eventId, grado, grupo, turno } = req.body;
