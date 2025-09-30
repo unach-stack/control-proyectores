@@ -150,6 +150,27 @@ const SignIn = () => {
               <p>Sistema de Control de Proyectores</p>
               <p>© {new Date().getFullYear()} Todos los derechos reservados</p>
             </motion.div>
+            {/* 🔗 Enlace a política de privacidad (requerido por Google OAuth) */}
+<p className="text-xs text-gray-500/80 dark:text-gray-400/80 mt-2 text-center">
+  Al continuar, aceptas nuestra{' '}
+  <a 
+    href="https://brixxdd.github.io" 
+    target="_blank" 
+    rel="noopener noreferrer"
+    className="text-blue-600 hover:underline dark:text-blue-400"
+  >
+    política de privacidad
+  </a>{' '}
+  y{' '}
+  <a 
+    href="https://brixxdd.github.io/terms.html" 
+    target="_blank" 
+    rel="noopener noreferrer"
+    className="text-blue-600 hover:underline dark:text-blue-400"
+  >
+    condiciones del servicio
+  </a>.
+</p>
           </div>
         </div>
       </motion.div>
