@@ -1199,6 +1199,10 @@ app.post('/api/proyectores', verifyToken, async (req, res) => {
   }
 });
 
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'OK' });
+});
+
 app.put('/api/proyectores/:id', verifyToken, isAdmin, async (req, res) => {
   try {
     const { estado } = req.body;
