@@ -426,7 +426,7 @@ app.get('/solicitudes/id/:id', verifyToken, async (req, res) => {
 
 app.post('/solicitar-proyector', verifyToken, async (req, res) => {
   try {
-    const { fechaInicio, fechaFin, motivo, eventId, grado, grupo, turno } = req.body;
+    const { fechaInicio, fechaFin, motivo, eventId, grado, grupo, turno, telefono } = req.body;
     const usuarioId = req.user.id;
     
     // Log para debugging
@@ -438,7 +438,8 @@ app.post('/solicitar-proyector', verifyToken, async (req, res) => {
     //   grado,
     //   grupo,
     //   turno,
-    //   usuarioId
+    //   usuarioId,
+    //   telefono
     // });
 
     // Validaciones mejoradas
@@ -471,13 +472,38 @@ app.post('/solicitar-proyector', verifyToken, async (req, res) => {
       grupo: grupo || null,
       turno: turno || null,
       estado: 'pendiente'
+      // El teléfono se añadirá después si es necesario, o se puede añadir aquí si está en el modelo
     });
 
-    // Log antes de guardar
-    console.log('Nueva solicitud a guardar:', nuevaSolicitud);
+
 
     const solicitudGuardada = await nuevaSolicitud.save();
     const solicitudConUsuario = await solicitudGuardada.populate('usuarioId');
+
+    // --- INICIO: Lógica para enviar notificación a N8N ---
+    if (process.env.N8N_WEBHOOK_URL && telefono) {
+      try {
+        const fechaFormateada = `${new Date(fechaInicio).toLocaleDateString('es-MX')} - ${new Date(fechaFin).toLocaleDateString('es-MX')}`;
+        
+        const payload = {
+          nombre: solicitudConUsuario.usuarioId.nombre,
+          fecha: fechaFormateada,
+          hora: turno || 'No especificado',
+          semestre: grado ? `${grado}º Semestre` : 'No especificado',
+          telefono: `+521${telefono}` // Asumiendo código de país de México
+        };
+
+
+        // Usamos axios para hacer la petición POST al webhook
+        await axios.post(process.env.N8N_WEBHOOK_URL, payload);
+
+        console.log('Notificación enviada a N8N exitosamente.');
+
+      } catch (n8nError) {
+        console.error('Error al enviar la notificación a N8N:', n8nError.message);
+      }
+    }
+    // --- FIN: Lógica para enviar notificación a N8N ---
 
     res.status(201).json({ 
       message: 'Solicitud creada exitosamente',

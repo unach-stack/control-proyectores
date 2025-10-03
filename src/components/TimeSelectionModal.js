@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Clock, Calendar, Copy } from 'lucide-react';
+import { X, Clock, Calendar, Copy, Phone } from 'lucide-react';
 import { alertaExito, alertaPersonalizada, alertaAdvertencia } from './Alert';
 import { useTheme } from '../contexts/ThemeContext';
 import { getCurrentThemeStyles } from '../themes/themeConfig';
@@ -10,6 +10,8 @@ const TimeSelectionModal = ({ show, handleClose, selectedDates, handleConfirm })
   const [timeSlots, setTimeSlots] = useState({});
   const [useSameTime, setUseSameTime] = useState(false);
   const [templateTime, setTemplateTime] = useState({ start: '', end: '' });
+  const [telefono, setTelefono] = useState('');
+  const [telefonoError, setTelefonoError] = useState('');
 
   // --- INICIO DE LÓGICA DE VALIDACIÓN ---
 
@@ -91,6 +93,18 @@ const TimeSelectionModal = ({ show, handleClose, selectedDates, handleConfirm })
     }));
   };
 
+  const handleTelefonoChange = (e) => {
+    const value = e.target.value.replace(/\D/g, ''); // Solo números
+    if (value.length <= 10) {
+      setTelefono(value);
+      if (value.length === 10) {
+        setTelefonoError('');
+      } else {
+        setTelefonoError('El número de teléfono debe tener 10 dígitos.');
+      }
+    }
+  };
+
   const onConfirm = () => {
     // Primero, verificar que se hayan establecido horarios para todas las fechas
     if (Object.keys(timeSlots).length !== selectedDates.length) {
@@ -101,6 +115,15 @@ const TimeSelectionModal = ({ show, handleClose, selectedDates, handleConfirm })
       );
       return;
     }
+
+    // Validar el número de teléfono
+    if (telefono.length !== 10) {
+      setTelefonoError('El número de teléfono debe tener 10 dígitos.');
+      alertaPersonalizada('¡Teléfono Inválido!', 'Por favor, ingresa un número de teléfono válido de 10 dígitos.', 'error');
+      return;
+    }
+
+    setTelefonoError('');
 
     const allValid = Object.values(timeSlots).every(slot => {
       if (!slot.start || !slot.end || slot.start >= slot.end) {
@@ -127,7 +150,7 @@ const TimeSelectionModal = ({ show, handleClose, selectedDates, handleConfirm })
       return;
     }
   
-    handleConfirm(timeSlots);
+    handleConfirm(timeSlots, telefono);
     alertaExito();
     handleClose();
   };
@@ -217,6 +240,31 @@ const TimeSelectionModal = ({ show, handleClose, selectedDates, handleConfirm })
               </div>
             </div>
           )}
+
+          {/* Campo para el número de teléfono */}
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                <Phone className="h-4 w-4 text-gray-400 dark:text-gray-500" />
+              </div>
+              <input
+                type="tel"
+                value={telefono}
+                onChange={handleTelefonoChange}
+                maxLength="10"
+                placeholder="Número de teléfono (10 dígitos)"
+                className={`block w-full rounded-lg border pl-10 pr-3 py-2 text-sm shadow-sm
+                           bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100
+                           ${telefonoError ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400 focus:ring-blue-500 dark:focus:ring-blue-400'}`}
+              />
+              <label className="absolute -top-2 left-2 -mt-px inline-block px-1 
+                                bg-white dark:bg-gray-800 text-xs font-medium 
+                                text-gray-900 dark:text-gray-300">
+                Teléfono de Contacto
+              </label>
+            </div>
+            {telefonoError && <p className="mt-1 text-xs text-red-500">{telefonoError}</p>}
+          </div>
 
           {/* Lista de fechas */}
           <div className="px-6 py-4 max-h-[60vh] overflow-y-auto">

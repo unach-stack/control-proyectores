@@ -466,9 +466,10 @@ const RequestProjector = () => {
     }
   };
 
-  const handleConfirmTimeSlots = async (selectedTimeSlots) => {
+  const handleConfirmTimeSlots = async (selectedTimeSlots, telefono) => {
     try {
       console.log('Procesando horarios seleccionados:', selectedTimeSlots);
+      console.log('Procesando horarios y teléfono:', selectedTimeSlots, telefono);
       
       const jwtToken = sessionStorage.getItem('jwtToken');
       const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
@@ -544,7 +545,8 @@ const RequestProjector = () => {
               eventId: createdEvent.id,
               grado: currentUser?.grado || '',
               grupo: currentUser?.grupo || '',
-              turno: currentUser?.turno || ''
+              turno: currentUser?.turno || '',
+              telefono: telefono
             })
           });
 
