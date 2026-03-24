@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '../contexts/ThemeContext';
 import toast from 'react-hot-toast';
@@ -68,15 +68,6 @@ const ThemeSelector = () => {
     }
   };
 
-  // Agregar toggle para darkMode
-  const handleDarkModeToggle = async () => {
-    try {
-      await toggleDarkMode(!darkMode);
-      await updateUserData({ darkMode: !darkMode });
-    } catch (error) {
-      console.error('Error al cambiar modo oscuro:', error);
-    }
-  };
 
   return (
     <div className="p-4 space-y-4">

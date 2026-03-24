@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { authService } from '../services/authService';
-import { Projector, Edit2, Trash2, Plus, Search, X, Check, AlertTriangle } from 'lucide-react';
+import { Projector, Edit2, Trash2, Plus, Search, X, AlertTriangle } from 'lucide-react';
 import { alertaExito, alertaError } from './Alert';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../contexts/ThemeContext';
@@ -10,7 +10,7 @@ import { getCurrentThemeStyles } from '../themes/themeConfig';
 const AdminProyectores = () => {
   const [proyectores, setProyectores] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [proyectorEditar, setProyectorEditar] = useState(null);

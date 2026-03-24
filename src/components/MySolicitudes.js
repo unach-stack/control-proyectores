@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { authService } from '../services/authService';
 import { motion } from 'framer-motion';
-import { Check, X, Clock, Calendar, User, BookOpen, QrCode } from 'lucide-react';
+import { X, QrCode } from 'lucide-react';
 import { useTimeZone } from '../contexts/TimeZoneContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { getCurrentThemeStyles } from '../themes/themeConfig';
@@ -53,7 +53,7 @@ const MySolicitudes = () => {
   const [showCommentsModal, setShowCommentsModal] = useState(false);
   const [selectedSolicitud, setSelectedSolicitud] = useState(null);
 
-  const { formatDate } = useTimeZone();
+  useTimeZone();
   const { currentTheme } = useTheme();
   const themeStyles = getCurrentThemeStyles(currentTheme);
 

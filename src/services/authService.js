@@ -1,6 +1,5 @@
 import axios from 'axios';
 import { AUTH_CONFIG } from '../config/config';
-import { gapi } from 'gapi-script';
 import Swal from 'sweetalert2';
 import { AUTH_CONSTANTS } from '../constants/auth';
 

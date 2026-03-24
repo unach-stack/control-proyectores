@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FiDownload, FiShare2, FiCalendar, FiClock, FiInfo } from 'react-icons/fi';
 import { fetchFromAPI } from '../utils/fetchHelper';
-import { alertaError, alertaExito } from './Alert';
+import { alertaError } from './Alert';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../contexts/ThemeContext';
 import { getCurrentThemeStyles } from '../themes/themeConfig';
@@ -83,6 +83,7 @@ const QRHistory = () => {
     };
 
     fetchQRCodes();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const handleDownloadQR = (qrData) => {

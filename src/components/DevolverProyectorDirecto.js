@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
-import { alertaError, alertaExito } from './Alert';
+import { alertaError } from './Alert';
 import { ArrowLeft, Loader, CheckCircle } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { getCurrentThemeStyles } from '../themes/themeConfig';

@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from "react";
+import { useEffect } from "react";
 
 const useInactivityTimer = (onTimeout, timeout = 10 * 60 * 1000) => {
   useEffect(() => {

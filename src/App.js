@@ -26,7 +26,7 @@ import MySolicitudes from './components/MySolicitudes';
 import AdminProyectores from './components/AdminProyectores';
 import NotificationsDropdown from './components/NotificationsDropdown';
 import AsignarProyectorDirecto from './components/AsignarProyectorDirecto';
-import { alertaExito, alertaError } from './components/Alert';
+import { alertaError } from './components/Alert';
 import { alertService } from './services/alertService';
 import QRHistory from './components/QRHistory';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -53,7 +53,6 @@ const App = () => {
   const [showGradeGroupModal, setShowGradeGroupModal] = React.useState(false);
   const [showWelcomeAlert, setShowWelcomeAlert] = React.useState(false);
   const [tokenTimeLeft, setTokenTimeLeft] = React.useState(15 * 60); // 15 minutos en segundos
-  const [showWarning, setShowWarning] = React.useState(false);
   const [showScanner, setShowScanner] = useState(false);
   const [showUserCommentsModal, setShowUserCommentsModal] = useState(false);
   const [selectedSolicitudForComment, setSelectedSolicitudForComment] = useState(null);
@@ -191,6 +190,7 @@ const App = () => {
     return () => {
       if (timer) clearInterval(timer);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated]);
 
   // Función para formatear el tiempo restante

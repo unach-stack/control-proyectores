@@ -1,34 +1,26 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { X, Search, Check, Edit, AlertCircle, Eye, Trash2, Minus, Plus, Calendar } from 'lucide-react';
+import { X, Check, AlertCircle, Eye, Calendar } from 'lucide-react';
 import { authService } from '../services/authService';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { FiRefreshCw } from 'react-icons/fi'; // Importar icono de recarga
 import AsignarProyectorModal from './AsignarProyectorModal';
-import { Temporal } from '@js-temporal/polyfill';
-import { useTimeZone } from '../contexts/TimeZoneContext';
 import { alertaExito, alertaError } from './Alert';
 import { fetchFromAPI } from '../utils/fetchHelper';
-import { BACKEND_URL } from '../config/config';
 import { useLocation } from 'react-router-dom';
-import { Link } from 'react-router-dom';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCheck, faTimes, faEdit, faSearch, faFilter, faSort, faEye } from '@fortawesome/free-solid-svg-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { getCurrentThemeStyles } from '../themes/themeConfig';
 
 const UserRequests = () => {
   const [users, setUsers] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm] = useState('');
   const [selectedUser, setSelectedUser] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [alert, setAlert] = useState({ show: false, message: '', type: '' });
-  const [pdfUrl, setPdfUrl] = useState(null);
   const [activeTab, setActiveTab] = useState('solicitudes');
   const [pdfPreviewModal, setPdfPreviewModal] = useState({
     show: false,
     url: ''
   });
-  const [zoom, setZoom] = useState(100);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshStatus, setRefreshStatus] = useState(null);
   const [showAsignarModal, setShowAsignarModal] = useState(false);
@@ -36,9 +28,9 @@ const UserRequests = () => {
   const [error, setError] = useState(null);
   
   // Nuevos estados para manejar los datos
-  const [solicitudes, setSolicitudes] = useState([]);
-  const [usuarios, setUsuarios] = useState([]);
-  const [documentos, setDocumentos] = useState([]);
+  const [, setSolicitudes] = useState([]);
+  const [, setUsuarios] = useState([]);
+  const [, setDocumentos] = useState([]);
   const [usuariosSolicitudes, setUsuariosSolicitudes] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
 
@@ -65,8 +57,8 @@ const UserRequests = () => {
     });
   };
 
-  const targetTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
+  // eslint-disable-next-line no-unused-vars
   const fetchSolicitudes = async () => {
     try {
       setIsLoading(true);
@@ -98,11 +90,12 @@ const UserRequests = () => {
 
   useEffect(() => {
     refreshData();
-    
+
     // Si hay parámetros de QR, buscar y seleccionar automáticamente
     if (qrSolicitudId && qrUsuarioId) {
       handleQrScan(qrSolicitudId, qrUsuarioId);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -487,6 +480,7 @@ const UserRequests = () => {
     };
   }, []);
 
+  // eslint-disable-next-line no-unused-vars
   const handleDeleteDocument = async (documentId, usuarioId) => {
     try {
       await authService.api.delete(`/documentos/${documentId}`);
@@ -559,6 +553,7 @@ const UserRequests = () => {
   }, [selectedUser]);
 
   // Función para manejar la subida exitosa
+  // eslint-disable-next-line no-unused-vars
   const handleUploadSuccess = useCallback(async (newDocument) => {
     setAlert({
       show: true,
@@ -1019,6 +1014,7 @@ const UserRequests = () => {
   };
 
   // Función para manejar acciones del usuario desde el modal
+  // eslint-disable-next-line no-unused-vars
   const handleUserAction = (user) => {
     // Cerrar el modal actual
     setShowModal(false);

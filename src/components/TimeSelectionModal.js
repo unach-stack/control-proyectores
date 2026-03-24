@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Clock, Calendar, Copy, Phone } from 'lucide-react';
-import { alertaExito, alertaPersonalizada, alertaAdvertencia } from './Alert';
+import { alertaExito, alertaPersonalizada } from './Alert';
 import { useTheme } from '../contexts/ThemeContext';
 import { getCurrentThemeStyles } from '../themes/themeConfig';
 

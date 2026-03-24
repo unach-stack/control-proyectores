@@ -4,19 +4,13 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTv, faCalendarPlus, faTrash } from '@fortawesome/free-solid-svg-icons';
 import { gapi } from 'gapi-script';
 import Calendar from 'react-calendar';
-import axios from 'axios';
 import 'react-calendar/dist/Calendar.css';
 import './RequestProjector.css';
-import TimeSelectionModal from './TimeSelectionModal'; 
+import TimeSelectionModal from './TimeSelectionModal';
 import DeleteEventModal from './DeleteEventModal';
 import { useTimeZone } from '../contexts/TimeZoneContext';
 import { alertaExito, alertaError } from './Alert';
-import { BACKEND_URL } from '../config/config';
 import { fetchFromAPI } from '../utils/fetchHelper';
-// Importaciones para QR
-import { QRCodeCanvas } from 'qrcode.react';
-import html2canvas from 'html2canvas';
-import { saveAs } from 'file-saver';
 import { useAuth } from '../hooks/useAuth';
 import { useTheme } from '../contexts/ThemeContext';
 import { getCurrentThemeStyles } from '../themes/themeConfig';
@@ -27,57 +21,48 @@ const API_KEY = "AIzaSyCGngj5UlwBeDeynle9K-yImbSTwfgWTFg";
 const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest"];
 const SCOPES = "https://www.googleapis.com/auth/calendar.events";
 
-let hasLoggedWeekBounds = false;
-
 const RequestProjector = () => {
-  const { currentTime, targetTimeZone } = useTimeZone();
-  const { user: currentUser } = useAuth(); // Obtener usuario actual para el QR
-  const [token, setToken] = useState(null);
+  const { targetTimeZone } = useTimeZone();
+  useAuth();
   const [selectedDates, setSelectedDates] = useState([]);
   const [events, setEvents] = useState([]);
   const [showModal, setShowModal] = useState(false);
-  const [showTimeModal, setShowTimeModal] = useState(false); 
-  const [timeSlots, setTimeSlots] = useState({});
-  const [calendarValue, setCalendarValue] = useState(new Date()); // Valor para el componente Calendar
-  
+  const [showTimeModal, setShowTimeModal] = useState(false);
+
   // Estados para la funcionalidad QR
   const [qrData, setQrData] = useState(null);
-  const [solicitudResponse, setSolicitudResponse] = useState(null);
-  const qrRef = useRef(null);
   const [shouldSaveQR, setShouldSaveQR] = useState(false);
 
   // Obtener el tema actual
   const { currentTheme } = useTheme();
   const themeStyles = getCurrentThemeStyles(currentTheme);
-  
-  // Zona horaria para México
-  const mexicoTimeZone = 'America/Mexico_City';
 
   // Función mejorada para descargar QR que funcione en dispositivos móviles
+  // eslint-disable-next-line no-unused-vars
   const downloadQR = () => {
     try {
       console.log('Iniciando descarga de QR');
-      
+
       // Ya que estás usando una API externa para mostrar el QR, úsala también para descargar
       if (!qrData) {
         console.error('No hay datos para generar QR');
         alertaError('No hay datos para generar el código QR');
         return;
       }
-      
+
       // URL del QR desde el servicio que ya estás usando
       const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(qrData)}&size=300x300&margin=10`;
       console.log('URL del QR generada', qrUrl);
-      
+
       // Detectar si es dispositivo móvil
       const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       console.log(`Dispositivo detectado: ${isMobile ? 'móvil' : 'desktop'}`);
-      
+
       if (isMobile) {
         // En móviles, abrir el QR en una nueva ventana/pestaña
         console.log('Abriendo QR en nueva ventana para dispositivo móvil');
         const newWindow = window.open(qrUrl, '_blank');
-        
+
         if (!newWindow) {
           console.error('No se pudo abrir ventana, posiblemente bloqueada por popup blocker');
           alertaError('No se pudo abrir la ventana. Intenta desactivar el bloqueador de ventanas emergentes.');
@@ -87,7 +72,7 @@ const RequestProjector = () => {
       } else {
         // En desktop, intenta descargar directamente
         console.log('Iniciando descarga directa para desktop');
-        
+
         // Método fetch para descargar la imagen
         fetch(qrUrl)
           .then(response => response.blob())
@@ -124,9 +109,10 @@ const RequestProjector = () => {
   };
 
   // Función para convertir Temporal.ZonedDateTime a Date
+  // eslint-disable-next-line no-unused-vars
   const temporalToDate = (temporalDate) => {
     if (!temporalDate) return null;
-    
+
     if (temporalDate instanceof Temporal.ZonedDateTime) {
       // Convertir ZonedDateTime a Date de JavaScript
       return new Date(temporalDate.epochMilliseconds);
@@ -139,7 +125,7 @@ const RequestProjector = () => {
       // Convertir a Date de JavaScript
       return new Date(zonedDateTime.epochMilliseconds);
     }
-    
+
     // Si ya es un Date, devolverlo
     return temporalDate;
   };
@@ -173,11 +159,11 @@ const RequestProjector = () => {
         // 4. Inicializar auth2 y manejar la autenticación
         const auth2 = gapi.auth2.getAuthInstance();
         console.log(`Estado de autenticación: ${auth2.isSignedIn.get() ? 'autenticado' : 'no autenticado'}`);
-        
+
         // 5. Manejar el token
         const currentUser = auth2.currentUser.get();
         let accessToken = currentUser.getAuthResponse().access_token;
-        
+
         if (accessToken === sessionStorage.getItem('accessRequest')) {
           console.log('Misma sesión');
         } else {
@@ -199,6 +185,7 @@ const RequestProjector = () => {
     };
 
     loadGapi();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchEvents = async () => {
@@ -218,7 +205,7 @@ const RequestProjector = () => {
         // Convertir fechas usando Temporal
         const startInstant = Temporal.Instant.from(event.start.dateTime || event.start.date);
         const endInstant = Temporal.Instant.from(event.end.dateTime || event.end.date);
-        
+
         return {
           id: event.id,
           summary: event.summary,
@@ -231,7 +218,7 @@ const RequestProjector = () => {
       setEvents(fetchedEvents);
     } catch (error) {
       console.error('Error al obtener eventos:', error);
-      
+
       if (error.status === 401) {
         const auth2 = gapi.auth2.getAuthInstance();
         try {
@@ -266,7 +253,7 @@ const RequestProjector = () => {
 
       const currentUser = auth2.currentUser.get();
       const accessToken = currentUser.getAuthResponse().access_token;
-      
+
       console.log('Creando evento con datos:', event);
       console.log('Token de acceso:', accessToken);
 
@@ -279,7 +266,7 @@ const RequestProjector = () => {
       if (!(event.start instanceof Date) || isNaN(event.start.getTime())) {
         throw new Error('La fecha de inicio no es válida');
       }
-      
+
       if (!(event.end instanceof Date) || isNaN(event.end.getTime())) {
         throw new Error('La fecha de fin no es válida');
       }
@@ -315,7 +302,7 @@ const RequestProjector = () => {
       const temporalDate = dateToTemporal(newDate).toPlainDate();
       // Formato ISO para almacenar (YYYY-MM-DD)
       const dateStr = temporalDate.toString();
-      
+
       console.log('Fecha seleccionada:', dateStr);
 
       // Actualización directa del estado
@@ -329,10 +316,11 @@ const RequestProjector = () => {
   };
 
   // Función para obtener los límites de la semana
+  // eslint-disable-next-line no-unused-vars
   const getWeekBounds = (date) => {
     // Convertir a PlainDate primero
     let plainDate;
-    
+
     if (date instanceof Date) {
       plainDate = Temporal.PlainDate.from({
         year: date.getFullYear(),
@@ -344,19 +332,19 @@ const RequestProjector = () => {
     } else {
       plainDate = Temporal.PlainDate.from(date);
     }
-    
+
     // Calcular el día de la semana (1-7, donde 1 es lunes)
     const dayOfWeek = plainDate.dayOfWeek || ((new Date(plainDate.toString()).getDay() + 6) % 7) + 1;
-    
+
     // Calcular cuántos días restar para llegar al lunes
     const daysToMonday = dayOfWeek - 1;
     // Calcular cuántos días sumar para llegar al viernes
     const daysToFriday = 5 - dayOfWeek;
-    
+
     // Calcular lunes y viernes
     const monday = plainDate.subtract({ days: daysToMonday });
     const friday = plainDate.add({ days: Math.max(0, daysToFriday) });
-    
+
     return { monday, friday };
   };
 
@@ -373,15 +361,26 @@ const RequestProjector = () => {
       return true;
     }
 
-    // Deshabilitar cualquier fecha pasada, incluyendo hoy
-    if (date <= now) {
+    // Deshabilitar fechas pasadas (hoy SÍ es seleccionable)
+    if (date < now) {
       return true;
     }
 
-    // Lógica para habilitar solo la semana siguiente (lunes a viernes)
     const currentDay = now.getDay(); // 0 (domingo) a 6 (sábado)
-    
-    // Calcular días hasta el próximo lunes.
+
+    // ── Semana actual: desde mañana hasta el viernes de esta semana ──
+    // Calcular el viernes de la semana actual
+    const daysUntilFridayThisWeek = 5 - currentDay; // 5 = viernes
+    const fridayThisWeek = new Date(now);
+    fridayThisWeek.setDate(now.getDate() + daysUntilFridayThisWeek);
+    fridayThisWeek.setHours(23, 59, 59, 999);
+
+    // Si todavía quedan días hábiles esta semana (date cae antes o en el viernes actual)
+    if (date <= fridayThisWeek) {
+      return false; // Habilitar días de la semana actual que sean > hoy
+    }
+
+    // ── Semana siguiente: lunes a viernes ──
     const daysUntilNextMonday = (7 - currentDay + 1) % 7;
     const daysToAdd = daysUntilNextMonday === 0 ? 7 : daysUntilNextMonday;
 
@@ -389,49 +388,48 @@ const RequestProjector = () => {
     nextMonday.setDate(now.getDate() + daysToAdd);
     nextMonday.setHours(0, 0, 0, 0);
 
-
     const nextFriday = new Date(nextMonday);
     nextFriday.setDate(nextMonday.getDate() + 4);
-    nextFriday.setHours(23, 59, 59, 999); // Fin del día viernes
+    nextFriday.setHours(23, 59, 59, 999);
 
-    // Deshabilitar todos los días que no estén en el rango de la próxima semana
+    // Deshabilitar los días que no estén en el rango de la próxima semana
     return date < nextMonday || date > nextFriday;
   };
 
   // Función para el className del tile - SOLUCIÓN DIRECTA
   const tileClassName = ({ date, view }) => {
     if (view !== 'month') return null;
-    
+
     // Convertir Date a formato ISO para comparar (YYYY-MM-DD)
     const dateStr = date.toISOString().split('T')[0];
-    
+
     // Verificar si la fecha está en el array de fechas seleccionadas
     // Usamos el formato exacto que se guarda en selectedDates
     const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-    
+
     const isSelected = selectedDates.includes(formattedDate);
-    
+
     const hasEvent = events.some(event => {
-      const eventDate = event.start instanceof Date 
-        ? event.start 
+      const eventDate = event.start instanceof Date
+        ? event.start
         : new Date(event.start);
       return eventDate.toISOString().split('T')[0] === dateStr;
     });
-    
+
     // Aplicar clases según el estado
     if (isSelected) {
       return 'bg-indigo-600 text-white hover:bg-indigo-700';
     } else if (hasEvent) {
       return 'bg-red-600 text-white hover:bg-red-700';
     }
-    
+
     return 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700';
   };
 
   const handleRequest = async () => {
     try {
       console.log('Iniciando solicitud de proyector...');
-      
+
       // Verificar si tenemos el token
       const googleCredential = sessionStorage.getItem('googleAccessToken');
       if (!googleCredential) {
@@ -470,10 +468,10 @@ const RequestProjector = () => {
     try {
       console.log('Procesando horarios seleccionados:', selectedTimeSlots);
       console.log('Procesando horarios y teléfono:', selectedTimeSlots, telefono);
-      
+
       const jwtToken = sessionStorage.getItem('jwtToken');
       const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
-      
+
       if (!jwtToken || !currentUser) {
         console.error("No hay sesión activa o faltan credenciales");
         alert("No hay sesión activa. Por favor, inicia sesión nuevamente.");
@@ -493,12 +491,12 @@ const RequestProjector = () => {
       for (const date of selectedDates) {
         const startTime = selectedTimeSlots[date]?.start;
         const endTime = selectedTimeSlots[date]?.end;
-    
+
         if (!startTime || !endTime) {
           console.error(`Faltan horarios para la fecha: ${date}`);
           continue;
         }
-    
+
         // Crear objetos Date para las fechas de inicio y fin
         const startDateTime = new Date(`${date}T${startTime}`);
         const endDateTime = new Date(`${date}T${endTime}`);
@@ -525,7 +523,7 @@ const RequestProjector = () => {
           };
 
           const createdEvent = await createEvent(event);
-          
+
           if (!createdEvent || !createdEvent.id) {
             console.error('No se pudo crear el evento en Google Calendar');
             continue;
@@ -572,24 +570,24 @@ const RequestProjector = () => {
 
       // Agregar un log más detallado para depuración
       console.log('Respuesta del servidor:', solicitudesCreadas);
-      
+
       // Verificar explícitamente la respuesta
       if (!solicitudesCreadas || solicitudesCreadas.length === 0) {
         console.error('No se recibieron solicitudes creadas del servidor');
         alertaError('No se pudo generar el código QR. Intenta nuevamente.');
         return;
       }
-      
+
       // Asegurarse de que la primera solicitud tenga un ID
       if (!solicitudesCreadas[0].id && !solicitudesCreadas[0]._id) {
         console.error('La solicitud no tiene un ID válido:', solicitudesCreadas[0]);
         alertaError('Error en el formato de la solicitud. Intenta nuevamente.');
         return;
       }
-      
+
       // Usar _id si id no está disponible (común en MongoDB)
       const solicitudId = solicitudesCreadas[0].id || solicitudesCreadas[0]._id;
-      
+
       // Crear datos para el QR con verificación adicional
       const qrInfo = {
         solicitudId: solicitudId,
@@ -600,18 +598,18 @@ const RequestProjector = () => {
           horaFin: s.horaFin
         }))
       };
-      
+
       // Verificar que los datos del QR sean válidos
       if (!qrInfo.solicitudId || !qrInfo.usuarioId) {
         console.error('Datos de QR incompletos:', qrInfo);
         alertaError('No se pudo generar el código QR con los datos recibidos.');
         return;
       }
-      
+
       // Convertir a string para el QR
       const qrString = JSON.stringify(qrInfo);
       console.log('QR generado con datos:', qrString);
-      
+
       // Establecer los datos del QR con un pequeño retraso para asegurar que el estado se actualice
       setTimeout(() => {
         setQrData(qrString);
@@ -631,13 +629,13 @@ const RequestProjector = () => {
   const handleDeleteEvents = async (eventIds) => {
     try {
       // Intentar obtener el token de diferentes fuentes
-      let accessToken = sessionStorage.getItem('googleAccessToken') || 
-                        sessionStorage.getItem('accessRequest') || 
-                        localStorage.getItem('accessToken');
-      
+      let accessToken = sessionStorage.getItem('googleAccessToken') ||
+        sessionStorage.getItem('accessRequest') ||
+        localStorage.getItem('accessToken');
+
       if (!accessToken) {
         console.error("El token no está disponible");
-        
+
         // Intentar renovar el token si gapi está disponible
         if (gapi && gapi.auth2) {
           try {
@@ -668,7 +666,7 @@ const RequestProjector = () => {
           console.log(`Evento ${eventId} eliminado`);
         } catch (error) {
           console.error(`Error al eliminar el evento ${eventId}:`, error);
-          
+
           // Si hay un error de autenticación, intentar renovar el token
           if (error.status === 401 && gapi && gapi.auth2) {
             try {
@@ -680,7 +678,7 @@ const RequestProjector = () => {
               gapi.client.setToken({
                 access_token: newToken
               });
-              
+
               // Reintentar la eliminación
               await gapi.client.calendar.events.delete({
                 calendarId: 'primary',
@@ -722,10 +720,9 @@ const RequestProjector = () => {
           {selectedDates.map(date => {
             // Crear la fecha correctamente en la zona horaria objetivo
             const [year, month, day] = date.split('-');
-            const zonedDate = new Date(Date.UTC(year, month - 1, day));
-            
+
             return (
-              <div 
+              <div
                 key={date}
                 className="flex items-center px-3 py-1 bg-blue-100 dark:bg-blue-900 
                          text-blue-800 dark:text-blue-100 
@@ -734,7 +731,7 @@ const RequestProjector = () => {
                 <span className="mr-1">
                   {date}
                 </span>
-                <button 
+                <button
                   onClick={() => handleDateChange(new Date(date))}
                   className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
                 >
@@ -761,11 +758,11 @@ const RequestProjector = () => {
         console.error('No hay token disponible');
         return;
       }
-      
+
       // Guardar en sessionStorage para uso temporal
       sessionStorage.setItem('lastGeneratedQR', qrData);
       console.log('QR guardado en sessionStorage');
-      
+
       const response = await fetchFromAPI('/qr-codes', {
         method: 'POST',
         headers: {
@@ -776,7 +773,7 @@ const RequestProjector = () => {
           qrData: qrData
         })
       });
-      
+
       if (response.success) {
         console.log('QR guardado en la base de datos');
         setShouldSaveQR(false); // Resetear el flag
@@ -793,9 +790,9 @@ const RequestProjector = () => {
         {/* Encabezado */}
         <div className="flex flex-col items-center mb-6 sm:mb-8">
           <div className={`${themeStyles.background} p-4 sm:p-6 rounded-full mb-4`}>
-            <FontAwesomeIcon 
-              icon={faTv} 
-              className={`${themeStyles.text} h-8 w-8 sm:h-12 sm:w-12 md:h-16 md:w-16`} 
+            <FontAwesomeIcon
+              icon={faTv}
+              className={`${themeStyles.text} h-8 w-8 sm:h-12 sm:w-12 md:h-16 md:w-16`}
             />
           </div>
           <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 dark:text-white mb-2">
@@ -902,7 +899,7 @@ const RequestProjector = () => {
               color: white !important;
             }
           `}</style>
-          
+
           <Calendar
             onChange={handleDateChange}
             value={null}
@@ -958,31 +955,31 @@ const RequestProjector = () => {
           className="max-w-lg mx-auto"
           themeStyles={themeStyles}
         />
-        
+
         {/* Sección de código QR */}
         {qrData && (
           <div className="mt-6 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md flex flex-col items-center">
             <h3 className="text-lg font-semibold mb-3 text-gray-800 dark:text-white">
               Código QR de tu solicitud
             </h3>
-            
+
             {/* Contenedor del QR simplificado */}
             <div className={`p-4 ${themeStyles.background} rounded-lg`}>
-              <img 
-                src={`https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(qrData)}&size=200x200&margin=10`} 
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(qrData)}&size=200x200&margin=10`}
                 alt="QR Code"
                 className="w-[200px] h-[200px]"
               />
-              
+
               <p className="text-xs text-gray-500 mt-2 text-center">
                 ID: {JSON.parse(qrData || '{"solicitudId":"no-id"}').solicitudId}
               </p>
             </div>
-            
+
             <p className="text-sm text-gray-600 dark:text-gray-300 mt-3 text-center">
               Muestra este código al administrador para agilizar la asignación de tu proyector
             </p>
-            
+
             {/* Botones para dispositivos móviles y desktop */}
             <div className="flex flex-col sm:flex-row gap-2 mt-4">
               <a
@@ -994,7 +991,7 @@ const RequestProjector = () => {
               >
                 Descargar QR
               </a>
-              
+
               {navigator.share && (
                 <button
                   onClick={() => {

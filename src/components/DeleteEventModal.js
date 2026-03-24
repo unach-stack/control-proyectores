@@ -1,6 +1,6 @@
 import React from 'react';
 import { X, Trash2, Calendar, Info } from 'lucide-react';
-import { alertaEliminacion, alertaError } from './Alert';
+import { alertaError } from './Alert';
 import { useTheme } from '../contexts/ThemeContext';
 import { getCurrentThemeStyles } from '../themes/themeConfig';
 
@@ -29,7 +29,6 @@ const DeleteEventModal = ({ show, handleClose, handleDelete, events, toggleEvent
     };
 
     const toggleAllEvents = () => {
-        const allSelected = events.every(event => event.selected);
         events.forEach(event => {
             toggleEventSelection(event.id);
         });

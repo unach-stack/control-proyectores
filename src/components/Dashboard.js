@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTv, faClockRotateLeft, faFileUpload, faChalkboardTeacher } from '@fortawesome/free-solid-svg-icons';
+import { faTv, faClockRotateLeft, faChalkboardTeacher } from '@fortawesome/free-solid-svg-icons';
 import useShowGradeGroupModal from '../hooks/useShowGradeGroupModal';
 import { authService } from '../services/authService';
 import { useTheme } from '../contexts/ThemeContext';
@@ -10,7 +10,7 @@ import { getCurrentThemeStyles } from '../themes/themeConfig';
 function Dashboard({ isAuthenticated, isAdmin, setShowGradeGroupModal }) {
   const { currentTheme } = useTheme();
   const themeStyles = getCurrentThemeStyles(currentTheme);
-  const [forceUpdate, setForceUpdate] = useState(0);
+  const [, setForceUpdate] = useState(0);
 
   // Escuchar cambios de tema
   useEffect(() => {

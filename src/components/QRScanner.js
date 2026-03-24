@@ -6,7 +6,6 @@ import { useNavigate } from 'react-router-dom';
 
 const QRScanner = ({ onClose }) => {
   const navigate = useNavigate();
-  const [startScan, setStartScan] = useState(true);
   const [cameraPermission, setCameraPermission] = useState(null);
   const [cameraError, setCameraError] = useState(null);
   const [cameras, setCameras] = useState([]);
@@ -16,6 +15,7 @@ const QRScanner = ({ onClose }) => {
 
   useEffect(() => {
     alertService.clearRecentAlerts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     checkCameraPermission();
     return () => {
       if (scannerRef.current) {
@@ -196,26 +196,15 @@ const QRScanner = ({ onClose }) => {
         </div>
         
         {cameraPermission === 'granted' ? (
-          <>
-            {startScan ? (
-              <div className="relative" ref={containerRef}>
-                <div id="qr-reader" className="w-full h-64 rounded-lg overflow-hidden bg-gray-200"></div>
-                {/* Recuadro de escaneo modificado para forzar forma cuadrada */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="w-64 h-64 border-2 border-blue-500 rounded-lg" style={{ maxWidth: '90%', maxHeight: '90%', aspectRatio: '1/1' }}></div>
-                </div>
-                <p className="text-sm text-center mt-2 text-gray-600 dark:text-gray-400">
-                  Coloca el código QR dentro del recuadro
-                </p>
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <p className="text-green-600 dark:text-green-400 font-medium">
-                  ¡Código escaneado correctamente!
-                </p>
-              </div>
-            )}
-          </>
+          <div className="relative" ref={containerRef}>
+            <div id="qr-reader" className="w-full h-64 rounded-lg overflow-hidden bg-gray-200"></div>
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="w-64 h-64 border-2 border-blue-500 rounded-lg" style={{ maxWidth: '90%', maxHeight: '90%', aspectRatio: '1/1' }}></div>
+            </div>
+            <p className="text-sm text-center mt-2 text-gray-600 dark:text-gray-400">
+              Coloca el código QR dentro del recuadro
+            </p>
+          </div>
         ) : cameraPermission === 'denied' ? (
           <div className="text-center py-8">
             <p className="text-red-600 dark:text-red-400 mb-4">

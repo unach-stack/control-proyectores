@@ -75,4 +75,53 @@ router.post('/', verifyToken, async (req, res) => {
   }
 });
 
-module.exports = router; 
+// PUT /api/proyectores/:id
+router.put('/:id', verifyToken, isAdmin, async (req, res) => {
+  try {
+    const { estado } = req.body;
+    const { id } = req.params;
+
+    const proyectorActualizado = await Proyector.findByIdAndUpdate(id, { estado }, { new: true });
+
+    if (!proyectorActualizado) {
+      return res.status(404).json({ message: 'Proyector no encontrado' });
+    }
+
+    res.json(proyectorActualizado);
+  } catch (error) {
+    console.error('Error al actualizar proyector:', error);
+    res.status(500).json({ message: 'Error al actualizar proyector' });
+  }
+});
+
+// DELETE /api/proyectores/:id
+router.delete('/:id', verifyToken, isAdmin, async (req, res) => {
+  try {
+    const proyectorEliminado = await Proyector.findByIdAndDelete(req.params.id);
+
+    if (!proyectorEliminado) {
+      return res.status(404).json({ message: 'Proyector no encontrado' });
+    }
+
+    res.json({ message: 'Proyector eliminado correctamente' });
+  } catch (error) {
+    console.error('Error al eliminar proyector:', error);
+    res.status(500).json({ message: 'Error al eliminar proyector', error: error.message });
+  }
+});
+
+// GET /api/proyectores/:id
+router.get('/:id', verifyToken, async (req, res) => {
+  try {
+    const proyector = await Proyector.findById(req.params.id);
+    if (!proyector) {
+      return res.status(404).json({ message: 'Proyector no encontrado' });
+    }
+    res.json(proyector);
+  } catch (error) {
+    console.error('Error al obtener proyector por ID:', error);
+    res.status(500).json({ message: 'Error al obtener proyector' });
+  }
+});
+
+module.exports = router;

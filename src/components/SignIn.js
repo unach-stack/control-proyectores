@@ -1,5 +1,4 @@
 import React, { useEffect } from 'react';
-import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import { motion } from 'framer-motion';
 import { useAuth } from '../hooks/useAuth';
 import { Navigate } from 'react-router-dom';
@@ -10,7 +9,7 @@ import { authService } from '../services/authService';
 
 const SignIn = () => {
   const { handleGoogleLogin, isAuthenticated, isAdmin } = useAuth();
-  const { currentTheme, darkMode, toggleDarkMode } = useTheme();
+  const { currentTheme } = useTheme();
   const themeStyles = getCurrentThemeStyles(currentTheme || 'default');
 
   useEffect(() => {

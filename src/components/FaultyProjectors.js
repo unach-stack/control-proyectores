@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { authService } from '../services/authService';
-import { AlertTriangle, Search, Filter, Calendar, User, MessageSquare, Eye, EyeOff } from 'lucide-react';
+import { AlertTriangle, Search, Filter, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useTheme } from '../contexts/ThemeContext';
 import { getCurrentThemeStyles } from '../themes/themeConfig';

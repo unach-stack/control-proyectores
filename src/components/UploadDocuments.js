@@ -11,7 +11,7 @@ function UploadDocuments() {
   const [isDragging, setIsDragging] = useState(false);
   const [uploadStatus, setUploadStatus] = useState(null);
   const [statusMessage, setStatusMessage] = useState('');
-  const [isFirstUpload, setIsFirstUpload] = useState(true);
+  const [, setIsFirstUpload] = useState(true);
   const [weeklyQuotaUsed, setWeeklyQuotaUsed] = useState(false);
   const [nextAvailableDate, setNextAvailableDate] = useState('');
 
@@ -159,7 +159,7 @@ function UploadDocuments() {
       formData.append('grupo', currentUser.grupo || '');
       formData.append('turno', currentUser.turno || '');
 
-      const response = await authService.api.post('/upload-pdf', formData, {
+      await authService.api.post('/upload-pdf', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }

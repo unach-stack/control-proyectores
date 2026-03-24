@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FaHome, FaUserFriends, FaCog, FaTv, FaFileUpload, FaBars, FaTimes, FaHistory, FaQrcode } from 'react-icons/fa';
+import { FaHome, FaCog, FaTv, FaFileUpload, FaBars, FaHistory, FaQrcode } from 'react-icons/fa';
 import ThemeToggle from './ThemeToggle';
 import ThemeSelector from './ThemeSelector';
 import { motion } from 'framer-motion';

@@ -130,7 +130,7 @@ export const useAuth = () => {
     } catch (error) {
       handleError(error);
     }
-  }, [handleLoginSuccess, handleError]);
+  }, [handleLoginSuccess, handleError, updateAuthState]);
 
   const checkAuth = useCallback(async () => {
     try {
@@ -162,7 +162,7 @@ export const useAuth = () => {
     } catch (error) {
       handleError(error);
     }
-  }, [handleError]);
+  }, [handleError, initializeGapi]);
 
   const handleLogout = useCallback(async () => {
     try {

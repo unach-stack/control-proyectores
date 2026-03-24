@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FiFile, FiSearch, FiDownload, FiFilter, FiLoader } from 'react-icons/fi';
-import { authService } from '../services/authService';
+import { FiFile, FiSearch, FiDownload, FiLoader } from 'react-icons/fi';
 
 function ViewDocuments() {
   const [documents, setDocuments] = useState([]);
