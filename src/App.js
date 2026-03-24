@@ -541,18 +541,46 @@ const App = () => {
             </div>
           </main>
         </div>
-        <Toaster 
-          position="top-right"
+        <Toaster
+          position="top-center"
+          gutter={8}
+          containerStyle={{
+            top: 16,
+            zIndex: 9999,
+          }}
           toastOptions={{
-            duration: 3000,
+            duration: 3500,
             style: {
-              background: '#363636',
-              color: '#fff',
+              borderRadius: '12px',
+              padding: '12px 16px',
+              fontSize: '14px',
+              fontWeight: '500',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+              maxWidth: '380px',
+              width: '90vw',
             },
             success: {
-              duration: 3000,
-              theme: {
-                primary: '#4aed88',
+              duration: 3500,
+              style: {
+                background: '#f0fdf4',
+                color: '#166534',
+                border: '1px solid #bbf7d0',
+              },
+              iconTheme: {
+                primary: '#16a34a',
+                secondary: '#f0fdf4',
+              },
+            },
+            error: {
+              duration: 4000,
+              style: {
+                background: '#fef2f2',
+                color: '#991b1b',
+                border: '1px solid #fecaca',
+              },
+              iconTheme: {
+                primary: '#dc2626',
+                secondary: '#fef2f2',
               },
             },
           }}

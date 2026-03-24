@@ -6,6 +6,52 @@
   transition: all 0.1s ease-out !important;
 }
 
+/* Overrides base del calendario */
+.react-calendar {
+  width: 100%;
+  max-width: 100%;
+  background: transparent;
+  border: none;
+  font-family: inherit;
+}
+
+.react-calendar button {
+  margin: 0;
+  border: 0;
+  outline: none;
+}
+
+.react-calendar__navigation {
+  display: flex;
+  height: 44px;
+  margin-bottom: 1em;
+}
+
+.react-calendar__navigation button {
+  min-width: 44px;
+  background: none;
+}
+
+.react-calendar__month-view__weekdays {
+  text-align: center;
+  text-transform: uppercase;
+  font-weight: bold;
+  font-size: 0.75em;
+}
+
+.react-calendar__month-view__weekdays__weekday {
+  padding: 0.5em;
+}
+
+.react-calendar__tile--now {
+  background: inherit !important;
+  color: inherit !important;
+}
+
+.bg-indigo-600 { background-color: #4f46e5 !important; }
+.bg-red-600    { background-color: #dc2626 !important; }
+.text-white    { color: white !important; }
+
 .request-projector-container {
   display: flex;
   flex-direction: column;

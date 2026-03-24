@@ -80,18 +80,9 @@ const AsignarProyectorDirecto = () => {
         tipo: 'success'
       });
 
-      toast.success(
-        `¡Proyector ${proyector.codigo} asignado correctamente!`,
-        {
-          duration: 5000,
-          icon: '🎯',
-          style: {
-            borderRadius: '10px',
-            background: '#333',
-            color: '#fff',
-          },
-        }
-      );
+      toast.success(`¡Proyector ${proyector.codigo} asignado correctamente!`, {
+        icon: '🎯',
+      });
 
       alertaExito('¡Proyector asignado correctamente!');
       

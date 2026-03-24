@@ -64,18 +64,9 @@ const AsignarProyectorModal = ({ show, onClose, solicitud, onAsignar }) => {
       });
 
       // Mostrar toast de éxito con información detallada
-      toast.success(
-        `¡Proyector ${proyector.codigo} asignado correctamente!`,
-        {
-          duration: 5000, // 5 segundos
-          icon: '🎯',
-          style: {
-            borderRadius: '10px',
-            background: '#333',
-            color: '#fff',
-          },
-        }
-      );
+      toast.success(`¡Proyector ${proyector.codigo} asignado correctamente!`, {
+        icon: '🎯',
+      });
 
       onAsignar(proyector);
       onClose();
