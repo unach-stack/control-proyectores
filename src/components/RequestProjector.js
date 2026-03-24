@@ -1,13 +1,14 @@
 import { Temporal } from '@js-temporal/polyfill';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTv, faCalendarPlus, faTrash, faClock, faQrcode, faDownload, faShareNodes } from '@fortawesome/free-solid-svg-icons';
+import { faTv, faCalendarPlus, faTrash, faQrcode, faDownload, faShareNodes, faCircleCheck } from '@fortawesome/free-solid-svg-icons';
 import { gapi } from 'gapi-script';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import './RequestProjector.css';
 import TimeSelectionModal from './TimeSelectionModal';
 import DeleteEventModal from './DeleteEventModal';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useTimeZone } from '../contexts/TimeZoneContext';
 import { alertaExito, alertaError } from './Alert';
 import { fetchFromAPI } from '../utils/fetchHelper';
@@ -20,24 +21,49 @@ const API_KEY = "AIzaSyCGngj5UlwBeDeynle9K-yImbSTwfgWTFg";
 const DISCOVERY_DOCS = ["https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest"];
 const SCOPES = "https://www.googleapis.com/auth/calendar.events";
 
+const ORBS = [
+  { w: 120, h: 120, left: '8%',  top: '-20%', dur: 4,   delay: 0 },
+  { w: 80,  h: 80,  left: '75%', top: '10%',  dur: 3.5, delay: 0.8 },
+  { w: 160, h: 160, left: '50%', top: '-30%', dur: 5,   delay: 0.3 },
+  { w: 60,  h: 60,  left: '90%', top: '50%',  dur: 3,   delay: 1.2 },
+  { w: 100, h: 100, left: '20%', top: '60%',  dur: 4.5, delay: 0.6 },
+];
+
+const DAY_NAMES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+const MONTH_NAMES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
 const RequestProjector = () => {
   const { targetTimeZone } = useTimeZone();
   useAuth();
-  const [selectedDates, setSelectedDates] = useState([]);
-  const [events, setEvents] = useState([]);
-  const [showModal, setShowModal] = useState(false);
-  const [showTimeModal, setShowTimeModal] = useState(false);
-  const [qrData, setQrData] = useState(null);
-  const [shouldSaveQR, setShouldSaveQR] = useState(false);
+  const [selectedDates, setSelectedDates]     = useState([]);
+  const [events, setEvents]                   = useState([]);
+  const [showModal, setShowModal]             = useState(false);
+  const [showTimeModal, setShowTimeModal]     = useState(false);
+  const [qrData, setQrData]                   = useState(null);
+  const [shouldSaveQR, setShouldSaveQR]       = useState(false);
+  const [justSelected, setJustSelected]       = useState(null);
+  const [tick, setTick]                       = useState(0);
 
   const { currentTheme } = useTheme();
   const themeStyles = getCurrentThemeStyles(currentTheme);
 
-  const dateToTemporal = (date) => {
+  // Reloj vivo — tick cada segundo
+  useEffect(() => {
+    const id = setInterval(() => setTick(t => t + 1), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const now = Temporal.Now.zonedDateTimeISO(targetTimeZone);
+  const timeStr  = now.toPlainTime().toString().split('.')[0];
+  const dateStr  = now.toPlainDate().toString();
+  const dayName  = DAY_NAMES[new Date().getDay()];
+  const monthName = MONTH_NAMES[now.month - 1];
+
+  const dateToTemporal = useCallback((date) => {
     if (!date) return null;
     const instant = Temporal.Instant.fromEpochMilliseconds(date.getTime());
     return instant.toZonedDateTimeISO(targetTimeZone);
-  };
+  }, [targetTimeZone]);
 
   useEffect(() => {
     const loadGapi = async () => {
@@ -50,33 +76,16 @@ const RequestProjector = () => {
             document.body.appendChild(script);
           });
         }
-
-        await new Promise((resolve) => {
-          gapi.load('client:auth2', resolve);
-        });
-
-        await gapi.client.init({
-          apiKey: API_KEY,
-          clientId: CLIENT_ID,
-          discoveryDocs: DISCOVERY_DOCS,
-          scope: SCOPES
-        });
-
+        await new Promise((resolve) => { gapi.load('client:auth2', resolve); });
+        await gapi.client.init({ apiKey: API_KEY, clientId: CLIENT_ID, discoveryDocs: DISCOVERY_DOCS, scope: SCOPES });
         const auth2 = gapi.auth2.getAuthInstance();
         const currentUser = auth2.currentUser.get();
         let accessToken = currentUser.getAuthResponse().access_token;
-
-        if (accessToken !== sessionStorage.getItem('accessRequest')) {
-          accessToken = sessionStorage.getItem('accessRequest');
-        }
-
+        if (accessToken !== sessionStorage.getItem('accessRequest')) accessToken = sessionStorage.getItem('accessRequest');
         gapi.client.setToken({ access_token: accessToken });
         await fetchEvents();
-      } catch (error) {
-        console.error('Error al cargar GAPI:', error);
-      }
+      } catch (error) { console.error('Error al cargar GAPI:', error); }
     };
-
     loadGapi();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -87,38 +96,25 @@ const RequestProjector = () => {
         calendarId: 'primary',
         timeMin: new Date(new Date().getFullYear(), 0, 1).toISOString(),
         timeMax: new Date(new Date().getFullYear(), 11, 31).toISOString(),
-        singleEvents: true,
-        orderBy: 'startTime',
-        q: 'Solicitud de proyector'
+        singleEvents: true, orderBy: 'startTime', q: 'Solicitud de proyector'
       });
-
-      const fetchedEvents = response.result.items.map(event => {
+      setEvents(response.result.items.map(event => {
         const startInstant = Temporal.Instant.from(event.start.dateTime || event.start.date);
-        const endInstant = Temporal.Instant.from(event.end.dateTime || event.end.date);
-        return {
-          id: event.id,
-          summary: event.summary,
-          start: new Date(startInstant.epochMilliseconds),
-          end: new Date(endInstant.epochMilliseconds),
-          selected: false
-        };
-      });
-
-      setEvents(fetchedEvents);
+        const endInstant   = Temporal.Instant.from(event.end.dateTime   || event.end.date);
+        return { id: event.id, summary: event.summary, start: new Date(startInstant.epochMilliseconds), end: new Date(endInstant.epochMilliseconds), selected: false };
+      }));
     } catch (error) {
       console.error('Error al obtener eventos:', error);
       if (error.status === 401) {
         try {
           const auth2 = gapi.auth2.getAuthInstance();
           await auth2.signIn();
-          const currentUser = auth2.currentUser.get();
-          const newToken = currentUser.getAuthResponse().access_token;
-          sessionStorage.setItem('accessRequest', newToken);
-          gapi.client.setToken({ access_token: newToken });
+          const cu = auth2.currentUser.get();
+          const tok = cu.getAuthResponse().access_token;
+          sessionStorage.setItem('accessRequest', tok);
+          gapi.client.setToken({ access_token: tok });
           await fetchEvents();
-        } catch (signInError) {
-          console.error('Error al renovar la sesión:', signInError);
-        }
+        } catch (e) { console.error('Error al renovar sesión:', e); }
       }
     }
   };
@@ -126,391 +122,241 @@ const RequestProjector = () => {
   const createEvent = async (event) => {
     try {
       const auth2 = gapi.auth2.getAuthInstance();
-      if (!auth2) throw new Error('No se pudo obtener la instancia de auth2');
-
+      if (!auth2) throw new Error('No se pudo obtener auth2');
       if (!auth2.isSignedIn.get()) await auth2.signIn();
-
-      const currentUser = auth2.currentUser.get();
-      const accessToken = currentUser.getAuthResponse().access_token;
-      gapi.client.setToken({ access_token: accessToken });
-
-      if (!(event.start instanceof Date) || isNaN(event.start.getTime()))
-        throw new Error('La fecha de inicio no es válida');
-      if (!(event.end instanceof Date) || isNaN(event.end.getTime()))
-        throw new Error('La fecha de fin no es válida');
-
+      const cu = auth2.currentUser.get();
+      gapi.client.setToken({ access_token: cu.getAuthResponse().access_token });
+      if (!(event.start instanceof Date) || isNaN(event.start.getTime())) throw new Error('Fecha inicio inválida');
+      if (!(event.end   instanceof Date) || isNaN(event.end.getTime()))   throw new Error('Fecha fin inválida');
       const response = await gapi.client.calendar.events.insert({
         calendarId: 'primary',
-        resource: {
-          summary: event.summary,
-          start: { dateTime: event.start.toISOString(), timeZone: targetTimeZone },
-          end: { dateTime: event.end.toISOString(), timeZone: targetTimeZone }
-        }
+        resource: { summary: event.summary, start: { dateTime: event.start.toISOString(), timeZone: targetTimeZone }, end: { dateTime: event.end.toISOString(), timeZone: targetTimeZone } }
       });
-
       return response.result;
-    } catch (error) {
-      console.error('Error al crear evento:', error);
-      throw error;
-    }
+    } catch (error) { console.error('Error al crear evento:', error); throw error; }
   };
 
   const handleDateChange = (newDate) => {
     if (newDate && newDate instanceof Date && !isNaN(newDate)) {
       const temporalDate = dateToTemporal(newDate).toPlainDate();
-      const dateStr = temporalDate.toString();
-      const isDateSelected = selectedDates.includes(dateStr);
-      if (isDateSelected) {
-        setSelectedDates(selectedDates.filter(d => d !== dateStr));
+      const ds = temporalDate.toString();
+      if (selectedDates.includes(ds)) {
+        setSelectedDates(selectedDates.filter(d => d !== ds));
       } else {
-        setSelectedDates([...selectedDates, dateStr].sort());
+        setSelectedDates([...selectedDates, ds].sort());
+        setJustSelected(ds);
+        setTimeout(() => setJustSelected(null), 600);
       }
     }
   };
 
   const tileDisabled = ({ date, view }) => {
     if (view !== 'month') return false;
-
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
-
-    const dayOfWeek = date.getDay();
-    if (dayOfWeek === 0 || dayOfWeek === 6) return true;
-    if (date < now) return true;
-
-    const currentDay = now.getDay();
-    const daysUntilFridayThisWeek = 5 - currentDay;
-    const fridayThisWeek = new Date(now);
-    fridayThisWeek.setDate(now.getDate() + daysUntilFridayThisWeek);
-    fridayThisWeek.setHours(23, 59, 59, 999);
-
-    if (date <= fridayThisWeek) return false;
-
-    const daysUntilNextMonday = (7 - currentDay + 1) % 7;
-    const daysToAdd = daysUntilNextMonday === 0 ? 7 : daysUntilNextMonday;
-    const nextMonday = new Date(now);
-    nextMonday.setDate(now.getDate() + daysToAdd);
-    nextMonday.setHours(0, 0, 0, 0);
-
-    const nextFriday = new Date(nextMonday);
-    nextFriday.setDate(nextMonday.getDate() + 4);
-    nextFriday.setHours(23, 59, 59, 999);
-
-    return date < nextMonday || date > nextFriday;
+    const now2 = new Date(); now2.setHours(0,0,0,0);
+    const dow = date.getDay();
+    if (dow === 0 || dow === 6) return true;
+    if (date < now2) return true;
+    const cd = now2.getDay();
+    const fri = new Date(now2); fri.setDate(now2.getDate() + (5 - cd)); fri.setHours(23,59,59,999);
+    if (date <= fri) return false;
+    const dNM = (7 - cd + 1) % 7; const dAdd = dNM === 0 ? 7 : dNM;
+    const nMon = new Date(now2); nMon.setDate(now2.getDate() + dAdd); nMon.setHours(0,0,0,0);
+    const nFri = new Date(nMon); nFri.setDate(nMon.getDate() + 4); nFri.setHours(23,59,59,999);
+    return date < nMon || date > nFri;
   };
 
   const tileClassName = ({ date, view }) => {
     if (view !== 'month') return null;
-
-    const dateStr = date.toISOString().split('T')[0];
-    const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-    const isSelected = selectedDates.includes(formattedDate);
-    const hasEvent = events.some(event => {
-      const eventDate = event.start instanceof Date ? event.start : new Date(event.start);
-      return eventDate.toISOString().split('T')[0] === dateStr;
-    });
-
-    if (isSelected) return 'bg-indigo-600 text-white hover:bg-indigo-700';
-    if (hasEvent) return 'bg-red-600 text-white hover:bg-red-700';
-    return 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700';
+    const iso  = date.toISOString().split('T')[0];
+    const fmt  = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+    const isSel = selectedDates.includes(fmt);
+    const isNew = fmt === justSelected;
+    const hasEv = events.some(e => { const ed = e.start instanceof Date ? e.start : new Date(e.start); return ed.toISOString().split('T')[0] === iso; });
+    if (isSel && isNew) return 'tile-just-selected';
+    if (isSel) return 'tile-selected';
+    if (hasEv) return 'tile-has-event';
+    return '';
   };
 
   const handleRequest = async () => {
     try {
-      const googleCredential = sessionStorage.getItem('googleAccessToken');
-      if (!googleCredential) return;
-
-      if (selectedDates.length === 0) {
-        alert("Por favor selecciona al menos un día entre lunes y viernes.");
-        return;
-      }
-
-      const validDates = selectedDates.map(dateStr => {
-        const date = new Date(dateStr + 'T00:00:00');
-        const day = date.getDay();
-        if (day === 0 || day === 6) {
-          alert("Por favor selecciona solo días de lunes a viernes.");
-          return null;
-        }
-        return date;
-      }).filter(date => date !== null);
-
-      if (validDates.length > 0) setShowTimeModal(true);
-    } catch (error) {
-      console.error('Error al procesar solicitud:', error);
-      alert('Hubo un error al procesar tu solicitud. Revisa la consola para más detalles.');
-    }
+      if (!sessionStorage.getItem('googleAccessToken')) return;
+      if (selectedDates.length === 0) { alert("Por favor selecciona al menos un día entre lunes y viernes."); return; }
+      const valid = selectedDates.map(ds => { const d = new Date(ds + 'T00:00:00'); if (d.getDay()===0||d.getDay()===6){alert("Solo días lunes a viernes.");return null;} return d; }).filter(Boolean);
+      if (valid.length > 0) setShowTimeModal(true);
+    } catch (error) { console.error('Error:', error); alert('Error al procesar tu solicitud.'); }
   };
 
   const handleConfirmTimeSlots = async (selectedTimeSlots, telefono) => {
     try {
-      const jwtToken = sessionStorage.getItem('jwtToken');
+      const jwtToken   = sessionStorage.getItem('jwtToken');
       const currentUser = JSON.parse(sessionStorage.getItem('currentUser'));
-
-      if (!jwtToken || !currentUser) {
-        alert("No hay sesión activa. Por favor, inicia sesión nuevamente.");
-        return;
-      }
-
-      if (!gapi.client || !gapi.auth2) {
-        alert("No se pudo conectar con Google Calendar. Por favor, recarga la página.");
-        return;
-      }
-
-      const solicitudesCreadas = [];
-
+      if (!jwtToken || !currentUser) { alert("No hay sesión activa."); return; }
+      if (!gapi.client || !gapi.auth2) { alert("No se pudo conectar con Google Calendar."); return; }
+      const creadas = [];
       for (const date of selectedDates) {
         const startTime = selectedTimeSlots[date]?.start;
-        const endTime = selectedTimeSlots[date]?.end;
-
+        const endTime   = selectedTimeSlots[date]?.end;
         if (!startTime || !endTime) continue;
-
-        const startDateTime = new Date(`${date}T${startTime}`);
-        const endDateTime = new Date(`${date}T${endTime}`);
-
-        if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) continue;
-
+        const startDT = new Date(`${date}T${startTime}`);
+        const endDT   = new Date(`${date}T${endTime}`);
+        if (isNaN(startDT.getTime()) || isNaN(endDT.getTime())) continue;
         try {
-          const createdEvent = await createEvent({
-            summary: 'Solicitud de proyector',
-            start: startDateTime,
-            end: endDateTime
-          });
-
-          if (!createdEvent?.id) continue;
-
-          const response = await fetchFromAPI('/solicitar-proyector', {
+          const ev = await createEvent({ summary: 'Solicitud de proyector', start: startDT, end: endDT });
+          if (!ev?.id) continue;
+          const res = await fetchFromAPI('/solicitar-proyector', {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${jwtToken}`
-            },
-            body: JSON.stringify({
-              fechaInicio: startDateTime.toISOString(),
-              fechaFin: endDateTime.toISOString(),
-              motivo: 'Solicitud de proyector',
-              eventId: createdEvent.id,
-              grado: currentUser?.grado || '',
-              grupo: currentUser?.grupo || '',
-              turno: currentUser?.turno || '',
-              telefono
-            })
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${jwtToken}` },
+            body: JSON.stringify({ fechaInicio: startDT.toISOString(), fechaFin: endDT.toISOString(), motivo: 'Solicitud de proyector', eventId: ev.id, grado: currentUser?.grado||'', grupo: currentUser?.grupo||'', turno: currentUser?.turno||'', telefono })
           });
-
-          const solicitudData = response?.solicitud;
-          if (solicitudData?._id) {
-            solicitudesCreadas.push({
-              id: solicitudData._id,
-              fecha: date,
-              horaInicio: startTime,
-              horaFin: endTime
-            });
-          }
-        } catch (error) {
-          console.error('Error al procesar solicitud para la fecha', date, error);
-        }
+          const sol = res?.solicitud;
+          if (sol?._id) creadas.push({ id: sol._id, fecha: date, horaInicio: startTime, horaFin: endTime });
+        } catch (e) { console.error('Error en fecha', date, e); }
       }
-
-      if (!solicitudesCreadas.length) {
-        alertaError('No se pudo generar el código QR. Intenta nuevamente.');
-        return;
-      }
-
-      const solicitudId = solicitudesCreadas[0].id || solicitudesCreadas[0]._id;
-      if (!solicitudId) {
-        alertaError('Error en el formato de la solicitud. Intenta nuevamente.');
-        return;
-      }
-
-      const qrInfo = {
-        solicitudId,
-        usuarioId: currentUser._id || currentUser.id,
-        fechas: solicitudesCreadas.map(s => ({
-          fecha: s.fecha,
-          horaInicio: s.horaInicio,
-          horaFin: s.horaFin
-        }))
-      };
-
-      if (!qrInfo.solicitudId || !qrInfo.usuarioId) {
-        alertaError('No se pudo generar el código QR con los datos recibidos.');
-        return;
-      }
-
-      const qrString = JSON.stringify(qrInfo);
-      setTimeout(() => {
-        setQrData(qrString);
-        setShouldSaveQR(true);
-      }, 100);
-
+      if (!creadas.length) { alertaError('No se pudo generar el código QR.'); return; }
+      const solicitudId = creadas[0].id || creadas[0]._id;
+      if (!solicitudId) { alertaError('Error en el formato de la solicitud.'); return; }
+      const qrInfo = { solicitudId, usuarioId: currentUser._id || currentUser.id, fechas: creadas.map(s => ({ fecha: s.fecha, horaInicio: s.horaInicio, horaFin: s.horaFin })) };
+      if (!qrInfo.solicitudId || !qrInfo.usuarioId) { alertaError('No se pudo generar el código QR.'); return; }
+      setTimeout(() => { setQrData(JSON.stringify(qrInfo)); setShouldSaveQR(true); }, 100);
       setShowTimeModal(false);
       fetchEvents();
       alertaExito('Solicitudes procesadas correctamente');
-    } catch (error) {
-      console.error('Error al procesar las solicitudes:', error);
-      alertaError('Hubo un error al procesar tu solicitud. Por favor, intenta de nuevo.');
-    }
+    } catch (error) { console.error('Error:', error); alertaError('Hubo un error. Intenta de nuevo.'); }
   };
 
   const handleDeleteEvents = async (eventIds) => {
     try {
-      let accessToken = sessionStorage.getItem('googleAccessToken') ||
-        sessionStorage.getItem('accessRequest') ||
-        localStorage.getItem('accessToken');
-
-      if (!accessToken) {
+      let tok = sessionStorage.getItem('googleAccessToken') || sessionStorage.getItem('accessRequest') || localStorage.getItem('accessToken');
+      if (!tok) {
         if (gapi?.auth2) {
-          try {
-            const auth2 = gapi.auth2.getAuthInstance();
-            await auth2.signIn();
-            const currentUser = auth2.currentUser.get();
-            accessToken = currentUser.getAuthResponse().access_token;
-            sessionStorage.setItem('googleAccessToken', accessToken);
-          } catch (signInError) {
-            console.error('Error al renovar el token:', signInError);
-            alertaError('No se pudo renovar la sesión. Por favor, inicia sesión nuevamente.');
-            return;
-          }
-        } else {
-          alertaError('No hay sesión activa. Por favor, inicia sesión nuevamente.');
-          return;
-        }
+          try { const a2=gapi.auth2.getAuthInstance(); await a2.signIn(); tok=a2.currentUser.get().getAuthResponse().access_token; sessionStorage.setItem('googleAccessToken',tok); }
+          catch(e){ console.error('Error token:',e); alertaError('No se pudo renovar la sesión.'); return; }
+        } else { alertaError('No hay sesión activa.'); return; }
       }
-
       for (const eventId of eventIds) {
-        try {
-          await gapi.client.calendar.events.delete({ calendarId: 'primary', eventId });
-        } catch (error) {
-          console.error(`Error al eliminar el evento ${eventId}:`, error);
-          if (error.status === 401 && gapi?.auth2) {
-            try {
-              const auth2 = gapi.auth2.getAuthInstance();
-              await auth2.signIn();
-              const currentUser = auth2.currentUser.get();
-              const newToken = currentUser.getAuthResponse().access_token;
-              sessionStorage.setItem('googleAccessToken', newToken);
-              gapi.client.setToken({ access_token: newToken });
-              await gapi.client.calendar.events.delete({ calendarId: 'primary', eventId });
-            } catch (signInError) {
-              console.error('Error al renovar la sesión:', signInError);
-            }
+        try { await gapi.client.calendar.events.delete({ calendarId:'primary', eventId }); }
+        catch(error){
+          console.error(`Error eliminando ${eventId}:`, error);
+          if (error.status===401 && gapi?.auth2) {
+            try { const a2=gapi.auth2.getAuthInstance(); await a2.signIn(); const nt=a2.currentUser.get().getAuthResponse().access_token; sessionStorage.setItem('googleAccessToken',nt); gapi.client.setToken({access_token:nt}); await gapi.client.calendar.events.delete({calendarId:'primary',eventId}); }
+            catch(e){ console.error('Error renovando:',e); }
           }
         }
       }
-
-      fetchEvents();
-      setShowModal(false);
-      alertaExito('Eventos eliminados correctamente');
-    } catch (error) {
-      console.error('Error general al eliminar eventos:', error);
-      alertaError('Hubo un error al eliminar los eventos. Por favor, intenta de nuevo.');
-    }
+      fetchEvents(); setShowModal(false); alertaExito('Eventos eliminados correctamente');
+    } catch (error) { console.error('Error:', error); alertaError('Hubo un error al eliminar.'); }
   };
 
-  const toggleEventSelection = (id) => {
-    setEvents(prevEvents =>
-      prevEvents.map(event =>
-        event.id === id ? { ...event, selected: !event.selected } : event
-      )
-    );
-  };
+  const toggleEventSelection = (id) =>
+    setEvents(prev => prev.map(e => e.id===id ? {...e, selected:!e.selected} : e));
 
-  useEffect(() => {
-    if (qrData && shouldSaveQR) saveQRToDatabase(qrData);
-  }, [qrData, shouldSaveQR]);
+  useEffect(() => { if (qrData && shouldSaveQR) saveQRToDatabase(qrData); }, [qrData, shouldSaveQR]);
 
   const saveQRToDatabase = async (data) => {
     try {
       const token = sessionStorage.getItem('jwtToken');
       if (!token) return;
-
       sessionStorage.setItem('lastGeneratedQR', data);
-
-      const response = await fetchFromAPI('/qr-codes', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ qrData: data })
-      });
-
-      if (response.success) setShouldSaveQR(false);
-    } catch (error) {
-      console.error('Error al guardar el QR:', error);
-    }
+      const res = await fetchFromAPI('/qr-codes', { method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`}, body: JSON.stringify({qrData:data}) });
+      if (res.success) setShouldSaveQR(false);
+    } catch (error) { console.error('Error guardando QR:', error); }
   };
 
-  const now = Temporal.Now.zonedDateTimeISO(targetTimeZone);
-  const qrUrl = qrData
-    ? `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(qrData)}&size=300x300&margin=10`
-    : null;
+  const qrUrl = qrData ? `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(qrData)}&size=300x300&margin=10` : null;
 
   return (
-    <div className="min-h-screen p-2 sm:p-4 md:p-8 bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-5xl mx-auto">
+    <motion.div
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: 'easeOut' }}
+      className="min-h-screen p-2 sm:p-4 md:p-8 bg-gray-50 dark:bg-gray-900"
+    >
+      <div className="max-w-5xl mx-auto space-y-4">
 
-        {/* Tarjeta principal */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
+        {/* ── HERO HEADER ── */}
+        <div className={`relative bg-gradient-to-br ${themeStyles.gradient} rounded-3xl overflow-hidden shadow-2xl`}>
 
-          {/* Header con gradiente */}
-          <div className={`bg-gradient-to-r ${themeStyles.gradient} p-6 sm:p-8`}>
-            <div className="flex flex-col items-center text-center">
-              <div className="bg-white/20 backdrop-blur-sm p-4 sm:p-5 rounded-2xl mb-4 shadow-inner">
-                <FontAwesomeIcon
-                  icon={faTv}
-                  className="text-white h-8 w-8 sm:h-12 sm:w-12 md:h-14 md:w-14"
-                />
+          {/* Orbs flotantes */}
+          {ORBS.map((o, i) => (
+            <motion.div
+              key={i}
+              className="absolute rounded-full bg-white/10 backdrop-blur-sm"
+              style={{ width: o.w, height: o.h, left: o.left, top: o.top }}
+              animate={{ y: [0, -18, 0], scale: [1, 1.08, 1], opacity: [0.25, 0.55, 0.25] }}
+              transition={{ duration: o.dur, repeat: Infinity, ease: 'easeInOut', delay: o.delay }}
+            />
+          ))}
+
+          <div className="relative z-10 flex flex-col items-center text-center px-6 py-10 sm:py-14">
+            {/* Ícono animado */}
+            <motion.div
+              animate={{ y: [0, -6, 0] }}
+              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+              className="bg-white/20 backdrop-blur-md border border-white/30 p-5 sm:p-6 rounded-2xl shadow-xl mb-5"
+            >
+              <FontAwesomeIcon icon={faTv} className="text-white h-10 w-10 sm:h-14 sm:w-14 drop-shadow-lg" />
+            </motion.div>
+
+            <motion.h1
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="text-3xl sm:text-4xl md:text-5xl font-black text-white drop-shadow-lg tracking-tight"
+            >
+              Solicitud de Proyector
+            </motion.h1>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.35 }}
+              className="mt-2 text-white/75 text-sm sm:text-base"
+            >
+              Selecciona los días que necesitas el proyector
+            </motion.p>
+
+            {/* Reloj vivo */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.5 }}
+              className="mt-6 bg-black/20 backdrop-blur-md border border-white/20 rounded-2xl px-6 py-3 flex items-center gap-4"
+            >
+              <div className="text-left">
+                <p className="text-white/60 text-xs uppercase tracking-widest">Tapachula, Chiapas</p>
+                <p className="text-white font-black text-2xl sm:text-3xl font-mono tabular-nums tracking-tight leading-none mt-0.5">
+                  {timeStr}
+                </p>
               </div>
-              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-1 drop-shadow">
-                Solicitud de Proyector
-              </h2>
-              <p className="text-white/80 text-sm sm:text-base">
-                Selecciona las fechas en las que necesitas el proyector
-              </p>
-            </div>
+              <div className="w-px h-10 bg-white/20" />
+              <div className="text-right">
+                <p className="text-white font-semibold text-sm">{dayName}</p>
+                <p className="text-white/70 text-xs">{now.day} {monthName} {now.year}</p>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+
+        {/* ── CARD PRINCIPAL ── */}
+        <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-xl overflow-hidden border border-gray-100 dark:border-gray-700">
+
+          {/* Leyenda */}
+          <div className="px-6 pt-5 pb-2 flex flex-wrap gap-4">
+            {[
+              { color: 'bg-indigo-500', label: 'Fecha seleccionada', glow: 'shadow-indigo-200' },
+              { color: 'bg-red-500',    label: 'Solicitud existente', glow: 'shadow-red-200' },
+              { color: 'bg-gray-300 dark:bg-gray-600', label: 'No disponible', glow: '' },
+            ].map(({ color, label, glow }) => (
+              <span key={label} className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                <span className={`w-3 h-3 rounded-full ${color} shadow-md ${glow}`} />
+                {label}
+              </span>
+            ))}
           </div>
 
-          <div className="p-4 sm:p-6 md:p-8 space-y-6">
-
-            {/* Reloj de zona horaria */}
-            <div className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-700/60 rounded-xl border border-gray-100 dark:border-gray-600">
-              <div className={`bg-gradient-to-br ${themeStyles.gradient} p-3 rounded-xl shadow`}>
-                <FontAwesomeIcon icon={faClock} className="text-white w-5 h-5" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                  Zona horaria — Ciudad de Tapachula, Chiapas
-                </p>
-                <p className="text-xl font-mono font-semibold text-gray-800 dark:text-gray-100 leading-tight">
-                  {now.toPlainTime().toString().split('.')[0]}
-                </p>
-              </div>
-              <div className="text-right shrink-0">
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                  {now.toPlainDate().toString()}
-                </p>
-              </div>
-            </div>
-
-            {/* Leyenda del calendario */}
-            <div className="flex flex-wrap gap-3 text-xs text-gray-600 dark:text-gray-400">
-              <span className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-full bg-indigo-600 inline-block" />
-                Fecha seleccionada
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-full bg-red-500 inline-block" />
-                Solicitud existente
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-full bg-gray-300 dark:bg-gray-600 inline-block" />
-                No disponible
-              </span>
-            </div>
-
-            {/* Calendario */}
-            <div className="bg-gray-50 dark:bg-gray-700/40 rounded-xl border border-gray-100 dark:border-gray-600 p-2 sm:p-4 shadow-sm">
+          {/* Calendario */}
+          <div className="px-3 sm:px-6 pb-4">
+            <div className="calendar-wrapper rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-700 shadow-inner">
               <Calendar
                 onChange={handleDateChange}
                 value={null}
@@ -519,124 +365,183 @@ const RequestProjector = () => {
                 locale="es-ES"
               />
             </div>
+          </div>
 
-            {/* Fechas seleccionadas */}
+          {/* Fechas seleccionadas */}
+          <AnimatePresence>
             {selectedDates.length > 0 && (
-              <div className="p-4 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl border border-indigo-100 dark:border-indigo-800">
-                <h3 className="text-sm font-semibold text-indigo-700 dark:text-indigo-300 mb-3 uppercase tracking-wide">
-                  Fechas seleccionadas — {selectedDates.length}
-                </h3>
+              <motion.div
+                key="dates-section"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3 }}
+                className="mx-4 sm:mx-6 mb-4 rounded-2xl bg-gradient-to-br from-indigo-50 to-violet-50 dark:from-indigo-900/20 dark:to-violet-900/20 border border-indigo-100 dark:border-indigo-800/50 p-4 overflow-hidden"
+              >
+                <div className="flex items-center gap-2 mb-3">
+                  <FontAwesomeIcon icon={faCircleCheck} className="text-indigo-500 text-sm" />
+                  <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">
+                    {selectedDates.length} {selectedDates.length === 1 ? 'fecha seleccionada' : 'fechas seleccionadas'}
+                  </span>
+                </div>
                 <div className="flex flex-wrap gap-2">
-                  {selectedDates.map(date => (
-                    <div
-                      key={date}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white rounded-full text-sm shadow-sm"
-                    >
-                      <span>{date}</span>
-                      <button
-                        onClick={() => handleDateChange(new Date(date))}
-                        className="ml-1 w-4 h-4 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center transition-colors leading-none"
-                        aria-label="Quitar fecha"
+                  <AnimatePresence>
+                    {selectedDates.map((date, i) => (
+                      <motion.div
+                        key={date}
+                        initial={{ scale: 0, opacity: 0, y: 12 }}
+                        animate={{ scale: 1, opacity: 1, y: 0 }}
+                        exit={{ scale: 0, opacity: 0, x: -10 }}
+                        transition={{ type: 'spring', stiffness: 450, damping: 22, delay: i * 0.04 }}
+                        className="date-pill flex items-center gap-2 pl-3 pr-2 py-1.5 bg-indigo-600 text-white rounded-full text-sm font-medium shadow-lg shadow-indigo-200 dark:shadow-indigo-900/40"
                       >
-                        ×
-                      </button>
-                    </div>
-                  ))}
+                        <span>{date}</span>
+                        <motion.button
+                          whileHover={{ scale: 1.2, rotate: 90 }}
+                          whileTap={{ scale: 0.85 }}
+                          onClick={() => handleDateChange(new Date(date))}
+                          className="w-5 h-5 rounded-full bg-white/25 hover:bg-white/45 flex items-center justify-center transition-colors text-xs leading-none"
+                          aria-label="Quitar fecha"
+                        >
+                          ×
+                        </motion.button>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
                 </div>
-              </div>
+              </motion.div>
             )}
+          </AnimatePresence>
 
-            {/* Botones de acción */}
-            <div className="flex flex-col sm:flex-row gap-3">
-              <button
-                onClick={handleRequest}
-                className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 font-semibold
-                           bg-gradient-to-r ${themeStyles.gradient} text-white rounded-xl
-                           ${themeStyles.hover} focus:ring-4 focus:ring-opacity-40 ${themeStyles.border}
-                           shadow-md hover:shadow-lg transition-all duration-200`}
-              >
-                <FontAwesomeIcon icon={faCalendarPlus} />
-                Solicitar Proyector
-              </button>
+          {/* Botones */}
+          <div className="px-4 sm:px-6 pb-6 flex flex-col sm:flex-row gap-3">
+            <motion.button
+              whileHover={{ scale: 1.02, boxShadow: '0 8px 30px rgba(99,102,241,0.35)' }}
+              whileTap={{ scale: 0.97 }}
+              onClick={handleRequest}
+              className={`btn-shimmer flex-1 flex items-center justify-center gap-2.5 px-6 py-3.5 font-bold text-sm
+                         bg-gradient-to-r ${themeStyles.gradient} text-white rounded-2xl
+                         shadow-lg transition-all duration-200`}
+            >
+              <FontAwesomeIcon icon={faCalendarPlus} className="text-base" />
+              Solicitar Proyector
+            </motion.button>
 
-              <button
-                onClick={() => setShowModal(true)}
-                className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 font-semibold
-                           bg-gradient-to-r ${themeStyles.deleteGradient || 'from-red-500 to-red-700'} text-white rounded-xl
-                           ${themeStyles.deleteHover || 'hover:from-red-600 hover:to-red-800'}
-                           focus:ring-4 focus:ring-opacity-40 ${themeStyles.deleteBorder || 'focus:ring-red-300 dark:focus:ring-red-700'}
-                           shadow-md hover:shadow-lg transition-all duration-200`}
-              >
-                <FontAwesomeIcon icon={faTrash} />
-                Eliminar Eventos
-              </button>
-            </div>
-
-            {/* Sección QR */}
-            {qrData && (
-              <div className="mt-2 rounded-2xl border-2 border-indigo-200 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-900/20 overflow-hidden">
-                <div className={`bg-gradient-to-r ${themeStyles.gradient} px-5 py-3 flex items-center gap-2`}>
-                  <FontAwesomeIcon icon={faQrcode} className="text-white" />
-                  <h3 className="font-semibold text-white text-sm">
-                    Código QR de tu solicitud
-                  </h3>
-                </div>
-
-                <div className="p-5 flex flex-col items-center gap-4">
-                  <div className={`p-3 ${themeStyles.background} rounded-xl shadow-md`}>
-                    <img
-                      src={`https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(qrData)}&size=200x200&margin=10`}
-                      alt="QR Code"
-                      className="w-[200px] h-[200px] rounded-lg"
-                    />
-                  </div>
-
-                  <div className="text-center">
-                    <p className="text-xs text-gray-500 dark:text-gray-400 font-mono">
-                      ID: {JSON.parse(qrData || '{"solicitudId":"no-id"}').solicitudId}
-                    </p>
-                    <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
-                      Muestra este código al administrador para agilizar la asignación
-                    </p>
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                    <a
-                      href={qrUrl}
-                      download="mi-qr-proyector.png"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`flex items-center justify-center gap-2 px-5 py-2.5 font-medium
-                                 bg-gradient-to-r ${themeStyles.gradient} text-white rounded-xl
-                                 ${themeStyles.hover} shadow transition-all duration-200 text-sm`}
-                    >
-                      <FontAwesomeIcon icon={faDownload} />
-                      Descargar QR
-                    </a>
-
-                    {navigator.share && (
-                      <button
-                        onClick={() => {
-                          navigator.share({
-                            title: 'Mi código QR de solicitud de proyector',
-                            text: 'Aquí está mi código QR para la solicitud de proyector',
-                            url: qrUrl
-                          }).catch(err => console.error('Error al compartir:', err));
-                        }}
-                        className="flex items-center justify-center gap-2 px-5 py-2.5 font-medium
-                                   bg-green-600 hover:bg-green-700 text-white rounded-xl
-                                   shadow transition-all duration-200 text-sm"
-                      >
-                        <FontAwesomeIcon icon={faShareNodes} />
-                        Compartir QR
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
+            <motion.button
+              whileHover={{ scale: 1.02, boxShadow: '0 8px 30px rgba(239,68,68,0.25)' }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => setShowModal(true)}
+              className="btn-shimmer-red flex-1 flex items-center justify-center gap-2.5 px-6 py-3.5 font-bold text-sm
+                         bg-gradient-to-r from-red-500 to-rose-600 text-white rounded-2xl
+                         shadow-lg transition-all duration-200"
+            >
+              <FontAwesomeIcon icon={faTrash} className="text-base" />
+              Eliminar Eventos
+            </motion.button>
           </div>
         </div>
+
+        {/* ── SECCIÓN QR ── */}
+        <AnimatePresence>
+          {qrData && (
+            <motion.div
+              key="qr-section"
+              initial={{ opacity: 0, scale: 0.85, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.85, y: 20 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+              className="relative bg-white dark:bg-gray-800 rounded-3xl shadow-2xl overflow-hidden border border-indigo-100 dark:border-indigo-800/50"
+            >
+              {/* Fondo degradado sutil */}
+              <div className={`absolute inset-0 bg-gradient-to-br ${themeStyles.gradient} opacity-5`} />
+
+              {/* Header */}
+              <div className={`relative bg-gradient-to-r ${themeStyles.gradient} px-6 py-4 flex items-center gap-3`}>
+                <motion.div
+                  animate={{ rotate: [0, 10, -10, 0] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                >
+                  <FontAwesomeIcon icon={faQrcode} className="text-white text-xl" />
+                </motion.div>
+                <div>
+                  <h3 className="font-bold text-white text-base">Código QR generado</h3>
+                  <p className="text-white/70 text-xs">Tu solicitud fue registrada exitosamente</p>
+                </div>
+                <motion.div
+                  animate={{ scale: [1, 1.15, 1] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                  className="ml-auto w-2.5 h-2.5 rounded-full bg-green-400 shadow-lg shadow-green-400/50"
+                />
+              </div>
+
+              <div className="relative p-6 flex flex-col items-center gap-5">
+                {/* QR con efecto scan */}
+                <motion.div
+                  initial={{ scale: 0.7, opacity: 0, rotateY: 90 }}
+                  animate={{ scale: 1, opacity: 1, rotateY: 0 }}
+                  transition={{ type: 'spring', stiffness: 200, damping: 20, delay: 0.15 }}
+                  className="relative qr-glow rounded-2xl overflow-hidden"
+                >
+                  <div className={`p-4 bg-gradient-to-br ${themeStyles.gradient} rounded-2xl`}>
+                    <div className="bg-white rounded-xl p-2 shadow-inner">
+                      <img
+                        src={`https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(qrData)}&size=200x200&margin=6`}
+                        alt="QR Code"
+                        className="w-[200px] h-[200px] rounded-lg"
+                      />
+                    </div>
+                  </div>
+                  {/* Línea de escaneo animada */}
+                  <div className="scan-line absolute left-4 right-4" />
+                </motion.div>
+
+                {/* Info */}
+                <div className="text-center">
+                  <p className="text-xs font-mono text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-700/60 px-3 py-1 rounded-full border border-gray-100 dark:border-gray-700">
+                    ID: {JSON.parse(qrData || '{"solicitudId":"no-id"}').solicitudId}
+                  </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-300 mt-2 max-w-xs">
+                    Muestra este código al administrador para la asignación del proyector
+                  </p>
+                </div>
+
+                {/* Botones QR */}
+                <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                  <motion.a
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
+                    href={qrUrl}
+                    download="mi-qr-proyector.png"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`btn-shimmer flex items-center justify-center gap-2 px-5 py-2.5 font-semibold text-sm
+                               bg-gradient-to-r ${themeStyles.gradient} text-white rounded-xl shadow-md`}
+                  >
+                    <FontAwesomeIcon icon={faDownload} />
+                    Descargar QR
+                  </motion.a>
+
+                  {navigator.share && (
+                    <motion.button
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.97 }}
+                      onClick={() => {
+                        navigator.share({ title: 'Mi QR de solicitud de proyector', text: 'Código QR para solicitud de proyector', url: qrUrl })
+                          .catch(err => console.error('Error al compartir:', err));
+                      }}
+                      className="flex items-center justify-center gap-2 px-5 py-2.5 font-semibold text-sm
+                                 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600
+                                 text-white rounded-xl shadow-md transition-all"
+                    >
+                      <FontAwesomeIcon icon={faShareNodes} />
+                      Compartir
+                    </motion.button>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Modales */}
         <DeleteEventModal
@@ -645,20 +550,17 @@ const RequestProjector = () => {
           handleDelete={handleDeleteEvents}
           events={events}
           toggleEventSelection={toggleEventSelection}
-          className="max-w-lg mx-auto"
           themeStyles={themeStyles}
         />
-
         <TimeSelectionModal
           show={showTimeModal}
           handleClose={() => setShowTimeModal(false)}
           selectedDates={selectedDates}
           handleConfirm={handleConfirmTimeSlots}
-          className="max-w-lg mx-auto"
           themeStyles={themeStyles}
         />
       </div>
-    </div>
+    </motion.div>
   );
 };
 
