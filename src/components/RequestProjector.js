@@ -1,5 +1,5 @@
 import { Temporal } from '@js-temporal/polyfill';
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTv, faCalendarPlus, faTrash } from '@fortawesome/free-solid-svg-icons';
 import { gapi } from 'gapi-script';
@@ -719,6 +719,7 @@ const RequestProjector = () => {
         <div className="flex flex-wrap gap-2">
           {selectedDates.map(date => {
             // Crear la fecha correctamente en la zona horaria objetivo
+            // eslint-disable-next-line no-unused-vars
             const [year, month, day] = date.split('-');
 
             return (

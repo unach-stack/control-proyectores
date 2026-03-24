@@ -130,7 +130,7 @@ export const useAuth = () => {
     } catch (error) {
       handleError(error);
     }
-  }, [handleLoginSuccess, handleError, updateAuthState]);
+  }, [handleError, updateAuthState]);
 
   const checkAuth = useCallback(async () => {
     try {

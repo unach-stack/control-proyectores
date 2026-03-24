@@ -15,8 +15,8 @@ const QRScanner = ({ onClose }) => {
 
   useEffect(() => {
     alertService.clearRecentAlerts();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     checkCameraPermission();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     return () => {
       if (scannerRef.current) {
         try {

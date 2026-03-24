@@ -48,7 +48,7 @@ const themes = [
 ];
 
 const ThemeSelector = () => {
-  const { currentTheme, changeTheme, darkMode, toggleDarkMode } = useTheme();
+  const { currentTheme, changeTheme, darkMode } = useTheme();
   const { updateUserData } = useAuth();
 
   const handleThemeChange = async (themeId) => {
