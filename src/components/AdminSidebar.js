@@ -1,198 +1,243 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import {
-  LayoutDashboard,
-  FolderKanban,
-  Menu,
-  Projector,
-  Settings,
-  FileBarChart,
-  AlertTriangle,
-} from 'lucide-react';
+import { LayoutDashboard, FolderKanban, Projector, FileBarChart, AlertTriangle, Settings, Menu } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import ThemeSelector from './ThemeSelector';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../contexts/ThemeContext';
 import { getCurrentThemeStyles } from '../themes/themeConfig';
 
+const NAV_ITEMS = [
+  { path: '/admin-dashboard',  icon: LayoutDashboard, label: 'Dashboard'             },
+  { path: '/user-requests',    icon: FolderKanban,    label: 'Solicitudes'           },
+  { path: '/admin-proyectores',icon: Projector,       label: 'Gestión Proyectores'   },
+  { path: '/faulty-projectors',icon: AlertTriangle,   label: 'Con Problemas'         },
+  { path: '/reports',          icon: FileBarChart,    label: 'Reportes'              },
+];
+
 const AdminSidebar = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const currentPath = location.pathname;
-  const [isOpen, setIsOpen] = useState(false);
+  const navigate  = useNavigate();
+  const location  = useLocation();
+  const [isOpen, setIsOpen]                     = useState(false);
   const [showThemeSelector, setShowThemeSelector] = useState(false);
   const { darkMode, toggleDarkMode, currentTheme } = useTheme();
   const themeStyles = getCurrentThemeStyles(currentTheme);
 
-  // Determinar si un enlace está activo
-  const isActive = (path) => currentPath === path;
+  const isActive = (path) => location.pathname === path;
 
   const handleDarkModeToggle = async () => {
-    try {
-      await toggleDarkMode(!darkMode);
-    } catch (error) {
-      console.error('Error al cambiar modo oscuro:', error);
-    }
-  };
-
-  const NavItem = ({ path, icon: Icon, children }) => {
-    const active = isActive(path);
-    
-    return (
-      <div 
-        onClick={() => {
-          navigate(path);
-          setIsOpen(false);
-        }} 
-        className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-200 group
-                   ${active 
-                     ? `bg-gradient-to-r ${themeStyles.gradient} text-white font-semibold` 
-                     : 'hover:bg-gradient-to-r hover:from-white/5 hover:to-white/20 hover:scale-105 hover:shadow-md hover:shadow-black/10'}`}
-      >
-        <div className={`${active 
-          ? `p-1 rounded-full bg-white/20` 
-          : "p-1 rounded-full transition-all duration-300 group-hover:bg-white/20"}`}>
-          {Icon && <Icon className={`w-5 h-5 text-white ${!active && "group-hover:scale-110 transition-transform duration-300"}`} />}
-        </div>
-        <span className="font-medium text-white">{children}</span>
-        {active && (
-          <div className={`ml-auto w-1.5 h-6 rounded-full bg-white/50`}></div>
-        )}
-      </div>
-    );
+    try { await toggleDarkMode(!darkMode); }
+    catch (error) { console.error('Error al cambiar modo oscuro:', error); }
   };
 
   return (
     <>
-      {/* Botón hamburguesa con gradiente y glow */}
-      {!isOpen && (
-        <button 
-          onClick={() => setIsOpen(true)}
-          className={`fixed top-4 left-4 z-50 
-                    bg-gradient-to-r ${themeStyles.gradient}
-                    p-3 rounded-xl lg:hidden
-                    shadow-[0_0_15px_rgba(59,130,246,0.5)]
-                    hover:shadow-[0_0_20px_rgba(147,51,234,0.5)]
-                    hover:scale-110
-                    transition-all duration-300`}
+      {/* ── Botón hamburger / X ── */}
+      <motion.button
+        onClick={() => setIsOpen(!isOpen)}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.92 }}
+        className={`fixed top-4 left-4 z-50 lg:hidden
+                    bg-gradient-to-br ${themeStyles.gradient}
+                    p-3 rounded-2xl shadow-xl`}
+        style={{ boxShadow: '0 0 20px rgba(0,0,0,0.25)' }}
+      >
+        <motion.div
+          animate={isOpen ? 'open' : 'closed'}
+          className="w-5 h-5 flex flex-col justify-center items-center gap-1"
         >
-          <Menu className="text-white w-5 h-5" />
-        </button>
-      )}
+          <motion.span
+            variants={{ closed: { rotate: 0, y: 0 }, open: { rotate: 45, y: 6 } }}
+            transition={{ duration: 0.25 }}
+            className="block w-5 h-0.5 bg-white rounded-full origin-center"
+          />
+          <motion.span
+            variants={{ closed: { opacity: 1, scaleX: 1 }, open: { opacity: 0, scaleX: 0 } }}
+            transition={{ duration: 0.2 }}
+            className="block w-5 h-0.5 bg-white rounded-full"
+          />
+          <motion.span
+            variants={{ closed: { rotate: 0, y: 0 }, open: { rotate: -45, y: -6 } }}
+            transition={{ duration: 0.25 }}
+            className="block w-5 h-0.5 bg-white rounded-full origin-center"
+          />
+        </motion.div>
+      </motion.button>
 
-      {/* Overlay para cerrar el sidebar */}
-      {isOpen && (
-        <div 
-          className="fixed inset-0 bg-black/30 backdrop-blur-sm z-30 lg:hidden 
-                    transition-opacity duration-300"
-          onClick={() => setIsOpen(false)}
-        />
-      )}
+      {/* ── Overlay móvil ── */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            key="admin-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-30 lg:hidden"
+            onClick={() => setIsOpen(false)}
+          />
+        )}
+      </AnimatePresence>
 
-      {/* Sidebar con gradiente del tema actual */}
-      <div className={`fixed top-0 left-0 h-screen 
-                      bg-gradient-to-b ${themeStyles.sidebarGradient || 'from-blue-700 to-blue-900'} 
-                      dark:from-gray-800 dark:to-gray-900
-                      text-white shadow-xl z-40 transition-all duration-300 
-                      ${isOpen ? 'w-64 translate-x-0' : '-translate-x-full w-64'} 
-                      lg:translate-x-0 lg:w-64`}>
-        
-        {/* Header con gradiente de texto y efecto hover */}
-        <div className="p-4 border-b border-white/10">
-          <h1 className={`text-xl font-bold bg-gradient-to-r from-white to-${currentTheme === 'default' ? 'blue-200' : 
-                         currentTheme === 'purple' ? 'purple-200' : 
-                         currentTheme === 'green' ? 'emerald-200' : 
-                         currentTheme === 'ocean' ? 'cyan-200' : 
-                         currentTheme === 'sunset' ? 'orange-200' : 'blue-200'} 
-                         dark:from-${currentTheme === 'default' ? 'blue-400' : 
-                                    currentTheme === 'purple' ? 'purple-400' : 
-                                    currentTheme === 'green' ? 'emerald-400' : 
-                                    currentTheme === 'ocean' ? 'cyan-400' : 
-                                    currentTheme === 'sunset' ? 'orange-400' : 'blue-400'} 
-                         dark:to-${currentTheme === 'default' ? 'blue-200' : 
-                                  currentTheme === 'purple' ? 'purple-200' : 
-                                  currentTheme === 'green' ? 'emerald-200' : 
-                                  currentTheme === 'ocean' ? 'cyan-200' : 
-                                  currentTheme === 'sunset' ? 'orange-200' : 'blue-200'} 
-                         bg-clip-text text-transparent
-                         hover:scale-105 transition-transform duration-300 cursor-default`}>
-            Panel de Administración
-          </h1>
-        </div>
+      {/* ── Sidebar ── */}
+      <aside
+        className={`fixed top-0 left-0 h-screen w-64 z-40
+                    transition-transform duration-300 ease-in-out
+                    ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+                    lg:translate-x-0`}
+      >
+        <div className={`h-full flex flex-col bg-gradient-to-b ${themeStyles.sidebarGradient || 'from-blue-700 to-blue-900'} relative overflow-hidden`}>
 
-        {/* Navigation con scrollbar personalizada según el tema */}
-        <nav className={`flex-1 p-4 space-y-2 overflow-y-auto 
-                       scrollbar-thin scrollbar-thumb-${currentTheme === 'default' ? 'blue-400' : 
-                                                      currentTheme === 'purple' ? 'purple-400' : 
-                                                      currentTheme === 'green' ? 'emerald-400' : 
-                                                      currentTheme === 'ocean' ? 'cyan-400' : 
-                                                      currentTheme === 'sunset' ? 'orange-400' : 'blue-400'} 
-                       dark:scrollbar-thumb-gray-600 scrollbar-track-transparent`}>
-          <NavItem path="/admin-dashboard" icon={LayoutDashboard}>
-            Dashboard
-          </NavItem>
-          
-          <NavItem path="/user-requests" icon={FolderKanban}>
-            Solicitudes por Usuario
-          </NavItem>
-          
-          <NavItem path="/admin-proyectores" icon={Projector}>
-            Gestión de Proyectores
-          </NavItem>
-          
-          <NavItem path="/faulty-projectors" icon={AlertTriangle}>
-            Proyectores con Problemas
-          </NavItem>
-          
-          <NavItem path="/reports" icon={FileBarChart}>
-            Reportes y Estadísticas
-          </NavItem>
-        </nav>
+          {/* Orbs decorativos */}
+          <div className="absolute -top-20 -right-20 w-56 h-56 rounded-full bg-white/5 blur-3xl pointer-events-none" />
+          <div className="absolute bottom-16 -left-12 w-44 h-44 rounded-full bg-white/5 blur-3xl pointer-events-none" />
+          <div className="absolute top-1/2 right-0 w-32 h-32 rounded-full bg-white/3 blur-2xl pointer-events-none" />
 
-        {/* Footer con controles de tema y efectos hover */}
-        <div className="p-4 border-t border-white/10 space-y-2 overflow-visible">
-          <div className={`flex items-center justify-between p-2 rounded-lg bg-white/5 
-                         hover:bg-white/10 transition-colors duration-300`}>
-            <span className="font-medium text-white">Modo Oscuro</span>
-            <ThemeToggle 
-              isDark={darkMode} 
-              toggleTheme={handleDarkModeToggle}
-            />
-          </div>
-          
-          <button 
-            onClick={() => setShowThemeSelector(!showThemeSelector)}
-            className={`flex items-center gap-3 p-3 rounded-lg transition-all duration-200 
-                      w-full text-left group
-                      ${showThemeSelector 
-                        ? `bg-gradient-to-r ${themeStyles.gradient}` 
-                        : 'hover:bg-gradient-to-r hover:from-white/5 hover:to-white/20'}`}
-          >
-            <div className={`${showThemeSelector 
-              ? `p-1 rounded-full bg-white/20` 
-              : "p-1 rounded-full transition-all duration-300 group-hover:bg-white/20"}`}>
-              <Settings className={`w-5 h-5 text-white ${showThemeSelector ? "animate-spin" : "group-hover:scale-110 transition-transform duration-300"}`} 
-                      style={{ animationDuration: '3s' }} />
+          {/* ── Header / Brand ── */}
+          <div className="relative px-5 pt-6 pb-5 border-b border-white/10">
+            <div className="flex items-center gap-3">
+              <motion.div
+                animate={{ scale: [1, 1.1, 1], opacity: [0.8, 1, 0.8] }}
+                transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                className={`w-10 h-10 rounded-xl bg-gradient-to-br from-white/25 to-white/10
+                             flex items-center justify-center shadow-lg border border-white/20 shrink-0`}
+              >
+                <LayoutDashboard className="text-white w-5 h-5" />
+              </motion.div>
+              <div className="min-w-0">
+                <p className="text-white font-black text-sm leading-tight">
+                  Panel Admin
+                </p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <motion.div
+                    animate={{ scale: [1, 1.4, 1] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                    className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)]"
+                  />
+                  <p className="text-white/50 text-xs font-medium">UNACH · Activo</p>
+                </div>
+              </div>
             </div>
-            <span className="font-medium text-white">Personalización</span>
-            {showThemeSelector && (
-              <div className={`ml-auto w-1.5 h-6 rounded-full bg-white/50`}></div>
-            )}
-          </button>
-          
-          {/* Selector de Temas con animación y scroll mejorado */}
-          {showThemeSelector && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className={`mt-2 p-2 rounded-lg bg-gradient-to-br from-black/20 to-white/5 backdrop-blur-sm
-                        max-h-[200px] overflow-y-auto scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent`}
+          </div>
+
+          {/* ── Navegación ── */}
+          <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto
+                          scrollbar-thin scrollbar-thumb-white/15 scrollbar-track-transparent">
+
+            <p className="px-3 mb-2 text-white/35 text-[10px] font-bold uppercase tracking-[0.12em]">
+              Menú principal
+            </p>
+
+            {NAV_ITEMS.map(({ path, icon: Icon, label }) => {
+              const active = isActive(path);
+              return (
+                <motion.div
+                  key={path}
+                  whileHover={{ x: active ? 0 : 4, scale: 1.01 }}
+                  whileTap={{ scale: 0.97 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+                  onClick={() => { navigate(path); setIsOpen(false); }}
+                  className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer
+                               transition-colors duration-150
+                               ${active
+                                 ? 'bg-white/15 shadow-inner'
+                                 : 'hover:bg-white/8 text-white/80 hover:text-white'}`}
+                >
+                  {/* Barra activa izquierda */}
+                  <AnimatePresence>
+                    {active && (
+                      <motion.div
+                        key={`bar-${path}`}
+                        layoutId="admin-active-bar"
+                        className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-full bg-white shadow-[0_0_10px_3px_rgba(255,255,255,0.5)]"
+                      />
+                    )}
+                  </AnimatePresence>
+
+                  {/* Ícono */}
+                  <motion.div
+                    animate={active ? { scale: [1, 1.18, 1] } : { scale: 1 }}
+                    transition={{ duration: 0.35 }}
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0
+                                ${active
+                                  ? 'bg-white/20 shadow-inner'
+                                  : 'bg-white/5'}`}
+                  >
+                    <Icon className={`w-4 h-4 ${active ? 'text-white' : 'text-white/65'}`} />
+                  </motion.div>
+
+                  <span className={`font-semibold text-sm truncate
+                                    ${active ? 'text-white' : 'text-white/70'}`}>
+                    {label}
+                  </span>
+
+                  {active && (
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="ml-auto w-1.5 h-1.5 rounded-full bg-white/80 shadow-[0_0_8px_rgba(255,255,255,0.8)]"
+                    />
+                  )}
+                </motion.div>
+              );
+            })}
+          </nav>
+
+          {/* ── Footer ── */}
+          <div className="px-3 pb-5 pt-3 border-t border-white/10 space-y-2">
+
+            {/* Modo oscuro */}
+            <div className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
+              <span className="text-white/80 text-sm font-medium">Modo oscuro</span>
+              <ThemeToggle isDark={darkMode} toggleTheme={handleDarkModeToggle} />
+            </div>
+
+            {/* Personalización */}
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={() => setShowThemeSelector(!showThemeSelector)}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors text-left
+                          ${showThemeSelector ? 'bg-white/15' : 'hover:bg-white/8'}`}
             >
-              <ThemeSelector />
-            </motion.div>
-          )}
+              <motion.div
+                animate={{ rotate: showThemeSelector ? 90 : 0 }}
+                transition={{ duration: 0.35, ease: 'easeInOut' }}
+                className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center shrink-0"
+              >
+                <Settings className="text-white/80 w-4 h-4" />
+              </motion.div>
+              <span className="text-white/80 font-semibold text-sm">Personalización</span>
+              {showThemeSelector && (
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="ml-auto w-1.5 h-1.5 rounded-full bg-white/70"
+                />
+              )}
+            </motion.button>
+
+            {/* Theme selector */}
+            <AnimatePresence>
+              {showThemeSelector && (
+                <motion.div
+                  key="admin-theme-selector"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.25 }}
+                  className="overflow-hidden"
+                >
+                  <div className="p-2 rounded-xl bg-black/15 backdrop-blur-sm
+                                  max-h-48 overflow-y-auto
+                                  scrollbar-thin scrollbar-thumb-white/15 scrollbar-track-transparent">
+                    <ThemeSelector />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
-      </div>
+      </aside>
     </>
   );
 };
