@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, FolderKanban, Projector, FileBarChart, AlertTriangle, Settings, Menu } from 'lucide-react';
+import { LayoutDashboard, FolderKanban, Projector, FileBarChart, AlertTriangle, Settings } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import ThemeSelector from './ThemeSelector';
 import { motion, AnimatePresence } from 'framer-motion';

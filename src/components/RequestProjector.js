@@ -42,7 +42,7 @@ const RequestProjector = () => {
   const [qrData, setQrData]                   = useState(null);
   const [shouldSaveQR, setShouldSaveQR]       = useState(false);
   const [justSelected, setJustSelected]       = useState(null);
-  const [tick, setTick]                       = useState(0);
+  const [, setTick]                            = useState(0);
 
   const { currentTheme } = useTheme();
   const themeStyles = getCurrentThemeStyles(currentTheme);
@@ -55,7 +55,6 @@ const RequestProjector = () => {
 
   const now = Temporal.Now.zonedDateTimeISO(targetTimeZone);
   const timeStr  = now.toPlainTime().toString().split('.')[0];
-  const dateStr  = now.toPlainDate().toString();
   const dayName  = DAY_NAMES[new Date().getDay()];
   const monthName = MONTH_NAMES[now.month - 1];
 
