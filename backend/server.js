@@ -28,7 +28,8 @@ app.use(cors({
     'https://control-proyectores-silk.vercel.app',
     'https://control-proyectores-unach.vercel.app',
     'http://localhost:3000',
-    'http://localhost:3001'
+    'http://localhost:3001',
+    'http://10.34.222.254:3000'
   ],
   credentials: true,
 }));
