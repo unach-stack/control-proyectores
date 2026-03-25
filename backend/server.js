@@ -29,7 +29,9 @@ app.use(cors({
     'https://control-proyectores-unach.vercel.app',
     'http://localhost:3000',
     'http://localhost:3001',
-    'http://10.34.222.254:3000'
+    'http://10.34.222.254:3000',
+    'http://control-proyectores.duckdns.org',
+    'https://control-proyectores.duckdns.org'
   ],
   credentials: true,
 }));
