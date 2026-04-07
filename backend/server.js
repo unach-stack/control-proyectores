@@ -25,10 +25,11 @@ app.use(cookieParser());
 app.use(cors({
   origin: [
     process.env.FRONTEND_URL?.trim(),
-    'https://control-proyectores-silk.vercel.app',
-    'https://control-proyectores-unach.vercel.app',
     'http://localhost:3000',
-    'http://localhost:3001'
+    'http://localhost:3001',
+    'http://10.34.222.254:3000',
+    'http://control-proyectores.duckdns.org',
+    'https://control-proyectores.duckdns.org'
   ],
   credentials: true,
 }));
@@ -105,7 +106,7 @@ mongoose.connect(process.env.MONGODB_URI, {
   useUnifiedTopology: true
 })
   .then(() => {
-    console.log('Conectado a MongoDB Atlas!');
+    console.log('Conectado a MongoDB local!');
     app.listen(PORT, () => {
       console.log(`Servidor corriendo en el puerto ${PORT}`);
     });
