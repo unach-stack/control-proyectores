@@ -268,14 +268,14 @@ NOTIFICACIONES CLAVE A AGREGAR
   [x] Ventana de edición 24h en UserProfile
   [x] Bloqueo PUT /update-user sin aprobación
 
-  FASE 4 (pulido) — parcialmente completada
-  ------------------------------------------
+  FASE 4 (pulido) ✓ COMPLETADA
+  ------------------------------
   [x] Cron lunes 00:01: activar encargados de la semana nueva
   [x] Cron domingo 23:59: cerrar encargadurías de la semana
-  [ ] Cron + notificación jueves 08:00: recordatorio de postulación
+  [x] Cron + notificación jueves 08:00: recordatorio de postulación
   [x] Historial de encargados por grupo (endpoint GET /api/encargado/historial)
   [x] Panel "Mi Encargaduría" en Dashboard del usuario (card con estado)
-  [ ] Dashboard admin con métricas: grupos sin encargado, sustituciones del mes
+  [x] Dashboard admin con métricas: grupos sin encargado, sustituciones del mes
 
 
 ================================================================================
