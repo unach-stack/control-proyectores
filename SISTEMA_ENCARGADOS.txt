@@ -176,7 +176,7 @@ Backend:
         de su grupo en la semana actual. Si no, bloquea acceso a
         POST /solicitar-proyector con error 403 y mensaje descriptivo.
   [ ] Cron job lunes 00:01: activar encargados de la semana nueva     (FASE 4)
-  [ ] Cron job miércoles 12:00: marcar noSePresento=true a encargados
+  [x] Cron job miércoles 12:00: marcar noSePresento=true a encargados
       activos que no tengan ninguna solicitud registrada esa semana   (FASE 2)
   [ ] Cron job domingo 23:59: cerrar todas las encargadurías de la semana (FASE 4)
 
@@ -200,7 +200,7 @@ Frontend — Admin:
   [x] Vista de encargados activos de la semana actual con estado
   [x] Estadísticas: total grupos, con encargado, con postulantes, sin postulantes
   [x] Selector de semana (navegación adelante/atrás)
-  [ ] Alerta destacada cuando hay solicitud de sustitución pendiente   (FASE 2)
+  [x] Alerta destacada cuando hay solicitud de sustitución pendiente   (FASE 2)
   [ ] Historial: quién ha sido encargado por grupo en semanas anteriores (FASE 4)
 
 
@@ -258,9 +258,9 @@ NOTIFICACIONES CLAVE A AGREGAR
   FASE 2 (control anti-trampa)
   ----------------------------
   [ ] Validación de perfil modificado reciente (<7 días bloqueado para postular)
-  [ ] Cron miércoles 12:00: marcar noSePresento=true
-  [ ] Alerta visual en panel admin cuando hay sustitución pendiente
-  [ ] Alerta miércoles 12:00 al encargado ausente
+  [x] Cron miércoles 12:00: marcar noSePresento=true
+  [x] Alerta visual en panel admin cuando hay sustitución pendiente
+  [x] Alerta miércoles 12:00 al encargado ausente
 
   FASE 3 (corrección de perfil)
   ------------------------------

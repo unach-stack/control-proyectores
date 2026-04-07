@@ -289,10 +289,10 @@ Ver especificación completa y checklist de progreso en `SISTEMA_ENCARGADOS.txt`
 - Solo miembros del mismo grado+grupo+turno pueden postularse o pedir sustitución
 - Middleware `checkEsEncargado` bloquea `POST /solicitar-proyector` con 403 descriptivo
 
-**Pendiente (Fase 2):**
-- Cron miércoles 12:00 que marca `noSePresento=true` automáticamente
-- Alerta visual en panel admin cuando hay sustituciones pendientes
-- Validación de perfil modificado hace <7 días
+**Fase 2 — parcialmente completada:**
+- ✓ Cron miércoles 12:00 que marca `noSePresento=true` automáticamente + notifica al encargado
+- ✓ Alerta visual (banner ámbar) en panel admin cuando hay sustituciones provisionales pendientes
+- Pendiente: Validación de perfil modificado hace <7 días (bloquea postulación)
 
 **Pendiente (Fase 3):**
 - Sistema de corrección de perfil con aprobación admin (modelo `SolicitudCorreccionPerfil`)
