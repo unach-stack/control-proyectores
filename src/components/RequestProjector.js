@@ -43,6 +43,8 @@ const RequestProjector = () => {
   const [shouldSaveQR, setShouldSaveQR]       = useState(false);
   const [justSelected, setJustSelected]       = useState(null);
   const [, setTick]                            = useState(0);
+  const [encargadoStatus, setEncargadoStatus]  = useState('loading'); // 'loading' | 'allowed' | 'denied'
+  const [encargadoInfo, setEncargadoInfo]       = useState(null);
 
   const { currentTheme } = useTheme();
   const themeStyles = getCurrentThemeStyles(currentTheme);
@@ -51,6 +53,21 @@ const RequestProjector = () => {
   useEffect(() => {
     const id = setInterval(() => setTick(t => t + 1), 1000);
     return () => clearInterval(id);
+  }, []);
+
+  // Verificar si el usuario es encargado activo esta semana
+  useEffect(() => {
+    const verificar = async () => {
+      try {
+        const data = await fetchFromAPI('/api/encargado/activo');
+        setEncargadoInfo(data);
+        setEncargadoStatus(data.esEncargado ? 'allowed' : 'denied');
+      } catch {
+        setEncargadoStatus('denied');
+        setEncargadoInfo(null);
+      }
+    };
+    verificar();
   }, []);
 
   const now = Temporal.Now.zonedDateTimeISO(targetTimeZone);
@@ -264,6 +281,136 @@ const RequestProjector = () => {
 
   const qrUrl = qrData ? `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(qrData)}&size=300x300&margin=10` : null;
 
+  // ── Gate: verificación de encargado ─────────────────────────────────────────
+  if (encargadoStatus === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto mb-4" />
+          <p className="text-sm text-gray-500 dark:text-gray-400">Verificando acceso...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (encargadoStatus === 'denied') {
+    const enc = encargadoInfo?.encargadoActivo;
+    const hoy = new Date().getUTCDay(); // 0=Dom 1=Lun ... 4=Jue 5=Vie
+    const puedeSerProvisional = enc?.noSePresento && hoy >= 1 && hoy <= 3;
+    const esVentanaPostulacion = hoy === 4 || hoy === 5;
+    const yaPostulado = !!encargadoInfo?.miPostulacionSiguienteSemana;
+
+    const handleSolicitarProvisional = async () => {
+      try {
+        await fetchFromAPI('/api/encargado/sustitucion', { method: 'POST' });
+        alertaExito('Solicitud enviada al administrador. Te notificarán si eres aprobado.');
+      } catch (err) {
+        const msg = err.message || '';
+        alertaError(msg.includes('400') ? msg.replace(/Error \d+: /, '').replace(/[{}"]/g,'') : 'No se pudo enviar la solicitud.');
+      }
+    };
+
+    const handlePostular = async () => {
+      try {
+        await fetchFromAPI('/api/encargado/postular', { method: 'POST' });
+        alertaExito('¡Postulación registrada! El administrador revisará los candidatos.');
+        // Refrescar el estado
+        const data = await fetchFromAPI('/api/encargado/activo');
+        setEncargadoInfo(data);
+      } catch (err) {
+        const msg = err.message || '';
+        alertaError(msg.replace(/Error \d+: /, '').replace(/^[{"]|[}"]$/g, '') || 'No se pudo registrar la postulación.');
+      }
+    };
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="min-h-screen p-4 sm:p-8 bg-gray-50 dark:bg-gray-900 flex items-center justify-center"
+      >
+        <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-3xl shadow-xl overflow-hidden">
+          <div className={`bg-gradient-to-br ${themeStyles.gradient} px-8 py-10 text-center relative overflow-hidden`}>
+            <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-white/10 blur-2xl pointer-events-none" />
+            <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M12 15v2m0 0v2m0-2h2m-2 0H10m2-5a7 7 0 100-14 7 7 0 000 14z" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-black text-white">Acceso Restringido</h2>
+            <p className="text-white/70 text-sm mt-1">Solo el Encargado activo puede hacer solicitudes esta semana</p>
+          </div>
+
+          <div className="px-8 py-6">
+            {enc ? (
+              <div className="bg-gray-50 dark:bg-gray-700/50 rounded-2xl p-4 mb-5">
+                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
+                  Encargado activo esta semana
+                </p>
+                <div className="flex items-center gap-3">
+                  {enc.picture && <img src={enc.picture} alt="" className="w-10 h-10 rounded-full" />}
+                  <div>
+                    <p className="font-bold text-gray-900 dark:text-white">{enc.nombre}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {enc.tipo === 'provisional' ? 'Encargado Provisional' : 'Encargado Titular'}
+                    </p>
+                  </div>
+                </div>
+                {enc.noSePresento && (
+                  <p className="mt-3 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded-lg px-3 py-2">
+                    El encargado no ha registrado solicitudes esta semana.
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="bg-gray-50 dark:bg-gray-700/50 rounded-2xl p-4 mb-5 text-center">
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  No hay encargado designado para tu grupo esta semana.
+                </p>
+              </div>
+            )}
+
+            {puedeSerProvisional && (
+              <button
+                onClick={handleSolicitarProvisional}
+                className={`w-full py-3 rounded-2xl font-semibold text-white bg-gradient-to-r ${themeStyles.gradient} hover:opacity-90 transition-opacity mb-3`}
+              >
+                Solicitar ser Encargado Provisional
+              </button>
+            )}
+
+            {/* Postulación próxima semana */}
+            {esVentanaPostulacion ? (
+              yaPostulado ? (
+                <div className="text-center bg-blue-50 dark:bg-blue-900/20 rounded-xl px-4 py-3">
+                  <p className="text-xs font-semibold text-blue-600 dark:text-blue-400">
+                    Ya estás postulado para la próxima semana
+                  </p>
+                  <p className="text-xs text-blue-500/70 dark:text-blue-400/60 mt-0.5 capitalize">
+                    Estado: {encargadoInfo.miPostulacionSiguienteSemana}
+                  </p>
+                </div>
+              ) : (
+                <button
+                  onClick={handlePostular}
+                  className={`w-full py-3 rounded-2xl font-semibold text-white bg-gradient-to-r ${themeStyles.gradient} hover:opacity-90 transition-opacity`}
+                >
+                  Postularme como Encargado (próxima semana)
+                </button>
+              )
+            ) : (
+              <p className="text-center text-xs text-gray-400 dark:text-gray-600">
+                Las postulaciones para la próxima semana abren los <strong>jueves y viernes</strong>.
+              </p>
+            )}
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 24 }}
@@ -332,6 +479,23 @@ const RequestProjector = () => {
                 <p className="text-white font-semibold text-sm">{dayName}</p>
                 <p className="text-white/70 text-xs">{now.day} {monthName} {now.year}</p>
               </div>
+            </motion.div>
+
+            {/* Badge: encargado activo */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.6 }}
+              className="mt-3 bg-emerald-500/20 border border-emerald-400/30 rounded-full px-5 py-1.5 flex items-center gap-2"
+            >
+              <motion.div
+                animate={{ scale: [1, 1.5, 1] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+                className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]"
+              />
+              <span className="text-white font-semibold text-sm">
+                Eres el Encargado de tu grupo esta semana
+              </span>
             </motion.div>
           </div>
         </div>

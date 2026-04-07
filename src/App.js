@@ -6,14 +6,11 @@ import Sidebar from './components/Sidebar';
 import AdminSidebar from './components/AdminSidebar';
 import Dashboard from './components/Dashboard';
 import AdminDashboard from './components/AdminDashboard';
-import Grupos from './components/Grupos';
-import MiniCalendar from './components/MiniCalendar';
 import RequestProjector from './components/RequestProjector';
 import UploadDocuments from './components/UploadDocuments';
 import ViewDocuments from './components/ViewDocuments';
 import SignIn from './components/SignIn';
 import GradeGroupModal from './components/GradeGroupModal';
-import WelcomeAlert from './components/WelcomeAlert';
 import { authService } from './services/authService';
 import useInactivityTimer from './hooks/useInactivityTimer';
 import { Toaster } from 'react-hot-toast';
@@ -36,6 +33,7 @@ import DevolverProyectorDirecto from './components/DevolverProyectorDirecto';
 import UserProfile from './components/UserProfile';
 import FaultyProjectors from './components/FaultyProjectors';
 import UserCommentsModal from './components/UserCommentsModal';
+import AdminEncargados from './components/AdminEncargados';
 
 const App = () => {
   const { 
@@ -51,7 +49,6 @@ const App = () => {
   useInactivityTimer(handleLogout, 10 * 60 * 1000); // 10 minutos
 
   const [showGradeGroupModal, setShowGradeGroupModal] = React.useState(false);
-  const [showWelcomeAlert, setShowWelcomeAlert] = React.useState(false);
   const [tokenTimeLeft, setTokenTimeLeft] = React.useState(15 * 60); // 15 minutos en segundos
   const [showScanner, setShowScanner] = useState(false);
   const [showUserCommentsModal, setShowUserCommentsModal] = useState(false);
@@ -85,60 +82,38 @@ const App = () => {
   };
 
   const handleCommentsUpdated = () => {
-    // Potentially refresh some data here if needed, e.g., MySolicitudes
-    console.log('Comments updated, modal closed.');
+    // Refresh data here if needed, e.g., MySolicitudes
   };
 
   React.useEffect(() => {
-    // Agregar logs para depuración
-    console.log("Estado de autenticación:", isAuthenticated);
-    console.log("Datos del usuario en el frontend:", user);
-    console.log("¿Es administrador?", isAdmin);
-    
-    // Si el usuario está autenticado pero los datos están incompletos en el frontend
     if (isAuthenticated && user) {
-      // No mostrar el modal para administradores
       if (isAdmin) {
-        console.log("Usuario administrador - No se muestra el modal de grado/grupo");
         setShowGradeGroupModal(false);
         return;
       }
-      
-      // Verificar explícitamente si los valores son nulos, undefined o vacíos
+
       const isGradoMissing = user.grado === null || user.grado === undefined || user.grado === "";
       const isGrupoMissing = user.grupo === null || user.grupo === undefined || user.grupo === "";
-      
+
       if (isGradoMissing || isGrupoMissing) {
-        console.log("Datos incompletos en el frontend, verificando en el servidor...");
-        
-        // Hacer una petición adicional para obtener los datos más recientes del usuario
         const fetchUserData = async () => {
           try {
             const token = sessionStorage.getItem('jwtToken');
             if (!token) return;
-            
+
             const response = await fetch(`${BACKEND_URL}/user-data`, {
-              headers: {
-                'Authorization': `Bearer ${token}`
-              }
+              headers: { 'Authorization': `Bearer ${token}` }
             });
-            
+
             if (response.ok) {
               const userData = await response.json();
-              console.log("Datos obtenidos directamente del servidor:", userData);
-              
-              // Si los datos en el servidor están completos, actualizar el estado
               if (userData.user && userData.user.grado && userData.user.grupo) {
-                console.log("Actualizando datos del usuario con información del servidor");
                 updateUserData(userData.user);
                 setShowGradeGroupModal(false);
               } else {
-                // No mostrar el modal para administradores incluso si los datos están incompletos
                 if (userData.user && userData.user.isAdmin) {
-                  console.log("Usuario administrador (según servidor) - No se muestra el modal");
                   setShowGradeGroupModal(false);
                 } else {
-                  console.log("Los datos también están incompletos en el servidor");
                   setShowGradeGroupModal(true);
                 }
               }
@@ -147,13 +122,9 @@ const App = () => {
             console.error("Error al obtener datos del usuario:", error);
           }
         };
-        
+
         fetchUserData();
       } else {
-        console.log("No se muestra el modal porque los datos están completos:", {
-          grado: user.grado,
-          grupo: user.grupo
-        });
         setShowGradeGroupModal(false);
       }
     }
@@ -223,8 +194,6 @@ const App = () => {
 
   // Función para manejar el escaneo exitoso
   const handleScanSuccess = (qrData) => {
-    console.log('Datos del QR escaneado:', qrData);
-    
     // Limpiar alertas antes de procesar
     alertService.clearRecentAlerts();
     
@@ -402,19 +371,7 @@ const App = () => {
                         : <Navigate to="/signin" />
                     } 
                   />
-                  <Route 
-                    path="/grupos" 
-                    element={
-                      isAuthenticated ? <Grupos /> : <Navigate to="/signin" />
-                    } 
-                  />
-                  <Route 
-                    path="/calendario" 
-                    element={
-                      isAuthenticated ? <MiniCalendar /> : <Navigate to="/signin" />
-                    } 
-                  />
-                  <Route 
+                  <Route
                     path="/request-projector" 
                     element={
                       isAuthenticated ? <RequestProjector /> : <Navigate to="/signin" />
@@ -489,13 +446,21 @@ const App = () => {
                     } 
                   />
                   
-                  <Route 
-                    path="/reports" 
+                  <Route
+                    path="/reports"
                     element={
-                      isAuthenticated && isAdmin 
-                        ? <ReportGenerator /> 
+                      isAuthenticated && isAdmin
+                        ? <ReportGenerator />
                         : <Navigate to="/signin" />
-                    } 
+                    }
+                  />
+                  <Route
+                    path="/admin-encargados"
+                    element={
+                      isAuthenticated && isAdmin
+                        ? <AdminEncargados />
+                        : <Navigate to="/signin" />
+                    }
                   />
 
                   <Route path="/devolver-proyector" element={<DevolverProyectorDirecto />} />
@@ -504,12 +469,6 @@ const App = () => {
                 </Routes>
 
                 {/* Modales */}
-                <WelcomeAlert 
-                  isOpen={showWelcomeAlert} 
-                  onClose={() => setShowWelcomeAlert(false)}
-                  openGradeGroupModal={() => setShowGradeGroupModal(true)}
-                />
-
                 {showGradeGroupModal && (
                   <GradeGroupModal 
                     isOpen={showGradeGroupModal}

@@ -75,6 +75,7 @@ app.use('/', require('./routes/adminRoutes'));
 app.use('/', require('./routes/comentariosRoutes'));
 app.use('/api/proyectores', require('./routes/proyectorRoutes'));
 app.use('/qr-codes', require('./routes/qrCodeRoutes'));
+app.use('/', require('./routes/encargadoRoutes'));
 
 // Manejador de errores global
 app.use((err, req, res, next) => {

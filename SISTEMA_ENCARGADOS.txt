@@ -1,0 +1,299 @@
+================================================================================
+  SISTEMA DE ENCARGADOS SEMANALES — CONTROL DE PROYECTORES UNACH
+  Especificación funcional v1.0
+================================================================================
+
+CONTEXTO
+--------
+El sistema actual permite a cualquier estudiante autenticado solicitar un
+proyector libremente. El problema es la falta de control: no se sabe quién
+es responsable, si el responsable falla no hay protocolo, y los datos de
+perfil (grado/grupo) no tienen verificación de autenticidad.
+
+Esta especificación define dos sistemas complementarios:
+  A) Verificación y corrección de perfil con supervisión admin
+  B) Sistema de encargados semanales con flujo de aprobación y sustitución
+
+
+================================================================================
+  PARTE A — VERIFICACIÓN Y CORRECCIÓN DE PERFIL DE USUARIO
+================================================================================
+
+PROBLEMA
+--------
+- El estudiante registra su grado/grupo manualmente en GradeGroupModal al
+  primer login, sin ninguna verificación externa.
+- Si se equivocó (grado, grupo, turno, nombre) no tiene forma de corregirlo.
+- Si se le permite editar libremente en cualquier momento, puede manipular
+  sus datos para acceder a proyectores que no le corresponden.
+
+SOLUCIÓN
+--------
+Flujo de solicitud de corrección de perfil:
+
+  [Usuario] -> solicita correccion -> [Admin revisa] -> aprueba o rechaza
+       |                                                      |
+       |                                            si aprueba: se habilita
+       |                                            ventana de edicion de
+       |                                            24 horas para el user
+       v
+  Si rechaza: usuario recibe notificacion con motivo
+
+REGLAS
+------
+- Un usuario solo puede tener UNA solicitud de corrección activa a la vez.
+- El usuario no puede editar su perfil sin aprobación previa del admin.
+- La ventana de edición expira en 24 horas desde la aprobación.
+- Si el usuario no edita en 24 horas, la solicitud se cierra y debe
+  repetir el proceso.
+- El admin puede ver el historial de cambios de perfil de cada usuario.
+
+MODELO DE DATOS NUEVO — SolicitudCorreccionPerfil
+--------------------------------------------------
+  usuarioId       ref User
+  camposACorregir [String]        -- ej: ['grado', 'grupo', 'turno']
+  valorActual     Object          -- snapshot actual del perfil
+  justificacion   String          -- por qué se equivocó
+  estado          pendiente | aprobado | rechazado | completado
+  fechaAprobacion Date            -- cuando admin aprobó
+  fechaExpiracion Date            -- +24h desde aprobación
+  editadoPor      ref User (admin)
+  createdAt       Date
+
+CHECKLIST DE IMPLEMENTACIÓN — PARTE A
+--------------------------------------
+Backend:
+  [ ] Crear modelo SolicitudCorreccionPerfil en models/
+  [ ] POST /api/perfil-correction    — user crea solicitud
+  [ ] GET  /api/perfil-correction    — admin lista todas las solicitudes
+  [ ] PUT  /api/perfil-correction/:id — admin aprueba o rechaza
+  [ ] Middleware que bloquee PUT /update-user si no hay aprobación activa
+      y no expiró la ventana de 24h
+  [ ] Al aprobar: calcular fechaExpiracion = ahora + 24h y guardar en DB
+  [ ] Notificación al usuario cuando admin aprueba o rechaza
+
+Frontend:
+  [ ] Botón "Solicitar corrección de datos" en UserProfile.js
+  [ ] Modal con: campos a corregir (checkboxes) + justificación (textarea)
+  [ ] Estado visible en UserProfile: "Solicitud pendiente / Aprobada (te quedan Xh) / Rechazada"
+  [ ] Si está aprobada y en ventana: habilitar formulario de edición en UserProfile
+  [ ] Panel admin: nueva sección en user-requests o admin-dashboard
+      mostrando solicitudes de corrección pendientes con botón aprobar/rechazar
+  [ ] Notificación en NotificationsDropdown cuando cambie el estado
+
+
+================================================================================
+  PARTE B — SISTEMA DE ENCARGADOS SEMANALES
+================================================================================
+
+CONCEPTO CENTRAL
+----------------
+Cada semana, UN estudiante por grupo queda designado como "Encargado".
+Solo el Encargado activo puede acceder a RequestProjector para esa semana.
+Si el Encargado no se presenta, puede ser sustituido por otro del mismo grupo
+previa autorización del admin.
+
+Los jueves y viernes de cada semana los estudiantes postulan para ser Encargado
+de su grupo la semana siguiente. El admin revisa y designa uno.
+
+ROLES
+-----
+  Usuario regular     — puede postularse como Encargado, puede solicitar
+                        sustitucion si el encargado falla
+  Encargado activo    — tiene acceso a RequestProjector esa semana
+  Encargado provisional — acceso temporal si el titular no se presentó
+  Admin               — aprueba postulaciones, verifica datos del grupo,
+                        autoriza sustituciones, puede asignar directamente
+
+CICLO SEMANAL
+-------------
+
+  JUEVES-VIERNES (semana actual)
+  ├── Sistema abre ventana de postulaciones para la semana siguiente
+  ├── Usuarios del mismo grado/grupo/turno pueden postularse
+  └── Admin recibe lista de postulantes por grupo
+
+  VIERNES (o antes del lunes siguiente)
+  ├── Admin revisa postulantes: verifica grado/grupo en perfil
+  ├── Admin designa UN Encargado por grupo para la semana siguiente
+  │   (puede asignar directo si no hay postulantes)
+  └── Sistema notifica al designado y cierra postulaciones del grupo
+
+  LUNES-VIERNES (semana activa)
+  ├── Solo el Encargado designado puede acceder a RequestProjector
+  ├── Puede hacer solicitudes normales para su grupo esa semana
+  └── Si no se presenta (no hace ninguna solicitud antes del miércoles 12:00):
+      ├── Cualquier miembro del mismo grupo puede solicitar ser Encargado Provisional
+      ├── Admin recibe alerta y puede aprobar al primero que solicite
+      └── El Provisional tiene acceso hasta el viernes de esa semana
+
+  DOMINGO
+  └── Se cierran todas las encargadurías activas de la semana
+
+REGLAS ANTI-TRAMPA
+------------------
+- Solo puede postularse quien tenga grado/grupo verificado o perfil original
+  sin cambios recientes (menos de 7 días desde cambio de perfil).
+- Un usuario no puede ser Encargado dos semanas seguidas del mismo grupo
+  (rotación obligatoria). ✓ IMPLEMENTADO
+- Si un grupo no tiene postulante para una semana, el admin puede asignar
+  directamente o el grupo queda sin acceso esa semana. ✓ IMPLEMENTADO
+- Solo los miembros del mismo grado+grupo+turno pueden postularse o
+  solicitar sustitución para ese grupo. ✓ IMPLEMENTADO
+- Un usuario solo puede ser Encargado de UN grupo a la vez. ✓ IMPLEMENTADO
+
+MODELO DE DATOS NUEVO — Encargado
+----------------------------------
+  usuarioId       ref User
+  grado           Number
+  grupo           String
+  turno           String
+  semana          String        -- ej: "2026-W13" (año-semana ISO)
+  tipo            titular | provisional
+  estado          postulado | activo | inactivo | sustituido
+  aprobadoPor     ref User (admin)
+  fechaInicio     Date          -- lunes de la semana
+  fechaFin        Date          -- viernes de la semana
+  noSePresento    Boolean       -- marcado si no hizo solicitudes antes del miércoles
+  sustituidoPor   ref User      -- si fue reemplazado
+  createdAt       Date
+
+CHECKLIST DE IMPLEMENTACIÓN — PARTE B
+--------------------------------------
+Backend:
+  [x] Crear modelo Encargado en models/
+  [x] POST /api/encargado/postular    — user se postula (solo jueves y viernes)
+  [x] GET  /api/encargado/semana/:semana  — admin ve postulantes por semana
+  [x] PUT  /api/encargado/:id/designar   — admin designa encargado
+  [x] POST /api/encargado/sustitucion    — user solicita ser provisional
+  [x] PUT  /api/encargado/:id/aprobar-sustitucion — admin aprueba sustitución
+  [x] GET  /api/encargado/activo         — devuelve encargado activo del grupo
+                                           del usuario autenticado esta semana
+  [x] GET  /api/encargado/grupos         — todos los grupos con estado por semana
+  [x] POST /api/encargado/asignar-directo — admin asigna sin postulación previa
+  [x] Middleware checkEsEncargado:
+        verifica que el usuario sea Encargado activo o Provisional activo
+        de su grupo en la semana actual. Si no, bloquea acceso a
+        POST /solicitar-proyector con error 403 y mensaje descriptivo.
+  [ ] Cron job lunes 00:01: activar encargados de la semana nueva     (FASE 4)
+  [ ] Cron job miércoles 12:00: marcar noSePresento=true a encargados
+      activos que no tengan ninguna solicitud registrada esa semana   (FASE 2)
+  [ ] Cron job domingo 23:59: cerrar todas las encargadurías de la semana (FASE 4)
+
+Frontend — Usuario:
+  [x] Botón "Postularme como Encargado" (visible solo los jueves y viernes)
+      deshabilitado si: ya hay postulación activa, eres encargado semana actual,
+      fuiste encargado la semana pasada
+      -- ubicado en pantalla de Acceso Restringido de RequestProjector
+  [x] Botón "Solicitar ser Provisional" (visible lun-mié si encargado no
+      se ha presentado y eres del mismo grupo)
+  [x] En RequestProjector: si el middleware devuelve 403, mostrar mensaje
+      claro: "No eres el encargado activo de tu grupo esta semana.
+      Solo [Nombre del Encargado] puede hacer solicitudes."
+  [x] Notificación cuando seas designado Encargado o Provisional
+  [ ] Panel "Mi Encargaduría" dedicado en Dashboard o sección propia   (FASE 4)
+
+Frontend — Admin:
+  [x] Sección "Encargados" en AdminSidebar
+  [x] Vista semanal: tarjetas por grupo/grado/turno con postulantes,
+      botón "Designar" por postulante y botón "Asignar directamente"
+  [x] Vista de encargados activos de la semana actual con estado
+  [x] Estadísticas: total grupos, con encargado, con postulantes, sin postulantes
+  [x] Selector de semana (navegación adelante/atrás)
+  [ ] Alerta destacada cuando hay solicitud de sustitución pendiente   (FASE 2)
+  [ ] Historial: quién ha sido encargado por grupo en semanas anteriores (FASE 4)
+
+
+================================================================================
+  PARTE C — INTEGRACIÓN CON FLUJO ACTUAL
+================================================================================
+
+CAMBIOS EN REQUESTPROJECTOR
+----------------------------
+  [x] Antes de cargar el calendario, consultar GET /api/encargado/activo
+  [x] Si la respuesta es 403 o el usuario no es encargado:
+        Mostrar pantalla de "Acceso restringido" con:
+        - Nombre del encargado activo del grupo
+        - Fecha desde cuando es encargado
+        - Botón "Solicitar ser Provisional" si aplica la condición
+        - Botón "Postularme" si es jueves o viernes
+        No mostrar el calendario ni los botones de solicitud
+  [x] Si el usuario ES encargado: mostrar badge visible
+      "Eres el Encargado de tu grupo esta semana" (punto verde pulsante)
+
+CAMBIOS EN GRADEGROUP MODAL
+----------------------------
+  [ ] Al guardar por primera vez, marcar en User: perfilCompletado=true,
+      fechaPerfilCompletado=now
+  [ ] Esta fecha se usa para el bloqueo de postulación si <7 días       (FASE 2)
+
+NOTIFICACIONES CLAVE A AGREGAR
+-------------------------------
+  [x] Usuario designado como Encargado
+  [x] Usuario designado como Provisional
+  [x] Alerta de sustitución pendiente (para admin) — notificación a todos los admins
+  [ ] Solicitud de corrección de perfil aprobada/rechazada             (FASE 3)
+  [ ] Recordatorio jueves 08:00: "Abre la postulación de encargados"
+      (cron + notificación a todos los usuarios con perfil completo)   (FASE 4)
+  [ ] Alerta miércoles 12:00 al encargado: "No has registrado solicitudes,
+      tu grupo puede solicitar sustitución"                             (FASE 2)
+
+
+================================================================================
+  PRIORIDAD DE IMPLEMENTACIÓN SUGERIDA
+================================================================================
+
+  FASE 1 (base) ✓ COMPLETADA
+  ---------------------------
+  [x] Modelo Encargado + endpoints básicos (postular, designar, activo,
+      grupos, asignar-directo, sustitucion, aprobar-sustitucion)
+  [x] Middleware checkEsEncargado en /solicitar-proyector
+  [x] Panel admin de encargados (vista semanal + designar + asignar directo
+      + estadísticas + selector de semana)
+  [x] Bloqueo en RequestProjector con mensaje descriptivo + nombre del encargado
+  [x] Badge "Eres el Encargado" en RequestProjector cuando usuario ES encargado
+  [x] Botón "Postularme" en pantalla de bloqueo (activo solo jue/vie)
+  [x] Regla no dos semanas consecutivas
+
+  FASE 2 (control anti-trampa)
+  ----------------------------
+  [ ] Validación de perfil modificado reciente (<7 días bloqueado para postular)
+  [ ] Cron miércoles 12:00: marcar noSePresento=true
+  [ ] Alerta visual en panel admin cuando hay sustitución pendiente
+  [ ] Alerta miércoles 12:00 al encargado ausente
+
+  FASE 3 (corrección de perfil)
+  ------------------------------
+  [ ] Modelo SolicitudCorreccionPerfil + endpoints
+  [ ] Panel admin de correcciones
+  [ ] Ventana de edición 24h en UserProfile
+  [ ] Bloqueo PUT /update-user sin aprobación
+
+  FASE 4 (pulido)
+  ---------------
+  [ ] Cron lunes 00:01: activar encargados de la semana nueva
+  [ ] Cron domingo 23:59: cerrar encargadurías de la semana
+  [ ] Cron + notificación jueves 08:00: recordatorio de postulación
+  [ ] Historial de encargados por grupo en panel admin
+  [ ] Panel "Mi Encargaduría" en Dashboard del usuario
+  [ ] Dashboard admin con métricas: grupos sin encargado, sustituciones del mes
+
+
+================================================================================
+  PREGUNTAS A DEFINIR CON EL ADMIN ANTES DE IMPLEMENTAR
+================================================================================
+
+  1. ✓ Postulación jueves Y viernes (resuelto)
+  2. ✓ El admin puede asignar directamente si no hay postulantes (resuelto)
+  3. ✓ Validación de no dos semanas seguidas activa desde Fase 1 (resuelto)
+  4. ¿Un encargado puede renunciar a su encargaduría activa?
+  5. ¿Los proyectores que solicita el encargado son solo para su grupo
+     o puede solicitar para clases de otros?
+  6. ¿Se necesita que el encargado marque "ya entregué el proyector"
+     o eso lo hace el admin al devolver?
+  7. ¿Cuántos días de historial de encargados necesita ver el admin?
+  8. ¿Hay grupos de posgrado o especiales con reglas distintas?
+
+================================================================================
+  FIN DEL DOCUMENTO — control-proyectores UNACH
+================================================================================

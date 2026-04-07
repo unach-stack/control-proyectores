@@ -4,8 +4,8 @@ const mongoose = require('mongoose');
 const axios = require('axios');
 const Solicitud = require('../models/Solicitud');
 const Proyector = require('../models/Proyector');
-const ProyectorComment = require('../models/ProyectorComment');
 const { verifyToken, isAdmin } = require('../middleware/auth');
+const checkEsEncargado = require('../middleware/checkEsEncargado');
 
 router.get('/solicitudes', verifyToken, async (req, res) => {
   try {
@@ -45,7 +45,7 @@ router.get('/solicitudes/id/:id', verifyToken, async (req, res) => {
   }
 });
 
-router.post('/solicitar-proyector', verifyToken, async (req, res) => {
+router.post('/solicitar-proyector', verifyToken, checkEsEncargado, async (req, res) => {
   try {
     const { fechaInicio, fechaFin, motivo, eventId, grado, grupo, turno, telefono } = req.body;
     const usuarioId = req.user.id;

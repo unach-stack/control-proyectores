@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, FolderKanban, Projector, FileBarChart, AlertTriangle, Settings } from 'lucide-react';
+import { LayoutDashboard, FolderKanban, Projector, FileBarChart, AlertTriangle, Settings, UsersRound } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import ThemeSelector from './ThemeSelector';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -8,11 +8,12 @@ import { useTheme } from '../contexts/ThemeContext';
 import { getCurrentThemeStyles } from '../themes/themeConfig';
 
 const NAV_ITEMS = [
-  { path: '/admin-dashboard',  icon: LayoutDashboard, label: 'Dashboard'             },
-  { path: '/user-requests',    icon: FolderKanban,    label: 'Solicitudes'           },
-  { path: '/admin-proyectores',icon: Projector,       label: 'Gestión Proyectores'   },
-  { path: '/faulty-projectors',icon: AlertTriangle,   label: 'Con Problemas'         },
-  { path: '/reports',          icon: FileBarChart,    label: 'Reportes'              },
+  { path: '/admin-dashboard',   icon: LayoutDashboard, label: 'Dashboard'           },
+  { path: '/user-requests',     icon: FolderKanban,    label: 'Solicitudes'         },
+  { path: '/admin-proyectores', icon: Projector,       label: 'Gestión Proyectores' },
+  { path: '/faulty-projectors', icon: AlertTriangle,   label: 'Con Problemas'       },
+  { path: '/admin-encargados',  icon: UsersRound,      label: 'Encargados'          },
+  { path: '/reports',           icon: FileBarChart,    label: 'Reportes'            },
 ];
 
 const AdminSidebar = () => {
