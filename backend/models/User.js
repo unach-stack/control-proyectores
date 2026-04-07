@@ -15,7 +15,8 @@ const userSchema = new mongoose.Schema({
     default: 'default',
     enum: ['default', 'purple', 'green', 'ocean', 'sunset']
   },
-  darkMode: { type: Boolean, default: false }
+  darkMode: { type: Boolean, default: false },
+  perfilModificadoEn: { type: Date, default: null }
 }, {
   timestamps: true
 });

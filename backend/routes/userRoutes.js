@@ -3,6 +3,7 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { verifyToken } = require('../middleware/auth');
+const { checkCorrectionWindow } = require('./perfilCorrectionRoutes');
 
 router.get('/usuarios', async (req, res) => {
   try {
@@ -13,7 +14,7 @@ router.get('/usuarios', async (req, res) => {
   }
 });
 
-router.put('/update-user', verifyToken, async (req, res) => {
+router.put('/update-user', verifyToken, checkCorrectionWindow, async (req, res) => {
   try {
     const { grado, grupo, turno } = req.body;
     const userId = req.user.id;
@@ -22,10 +23,15 @@ router.put('/update-user', verifyToken, async (req, res) => {
       return res.status(400).json({ message: 'Todos los campos son requeridos' });
     }
 
-    const updatedUser = await User.findByIdAndUpdate(userId, { grado, grupo, turno }, { new: true });
+    const updatedUser = await User.findByIdAndUpdate(userId, { grado, grupo, turno, perfilModificadoEn: new Date() }, { new: true });
 
     if (!updatedUser) {
       return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+
+    if (req.correctionSolicitudId) {
+      const SolicitudCorreccionPerfil = require('../models/SolicitudCorreccionPerfil');
+      await SolicitudCorreccionPerfil.findByIdAndUpdate(req.correctionSolicitudId, { estado: 'completado' });
     }
 
     res.json({ message: 'Usuario actualizado correctamente', user: updatedUser });

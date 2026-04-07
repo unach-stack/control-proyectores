@@ -21,11 +21,22 @@ async function crearNotificacion(usuarioId, mensaje, tipo = 'info', entidadId = 
 // Solo disponible jueves y viernes.
 router.post('/api/encargado/postular', verifyToken, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select('grado grupo turno nombre');
+    const user = await User.findById(req.user.id).select('grado grupo turno nombre perfilModificadoEn');
     if (!user) return res.status(404).json({ message: 'Usuario no encontrado' });
 
     if (!user.grado || !user.grupo || !user.turno) {
       return res.status(400).json({ message: 'Debes completar tu perfil (grado, grupo y turno) antes de postularte.' });
+    }
+
+    if (user.perfilModificadoEn) {
+      const msPerDia = 1000 * 60 * 60 * 24;
+      const diasDesde = Math.floor((Date.now() - user.perfilModificadoEn.getTime()) / msPerDia);
+      if (diasDesde < 7) {
+        return res.status(403).json({
+          message: `Tu perfil fue modificado hace ${diasDesde} día${diasDesde === 1 ? '' : 's'}. Debes esperar ${7 - diasDesde} día${7 - diasDesde === 1 ? '' : 's'} más para postularte.`,
+          codigoError: 'PERFIL_RECIENTE'
+        });
+      }
     }
 
     // Solo jueves (4) o viernes (5) en UTC
@@ -446,6 +457,29 @@ router.get('/api/encargado/mis-postulaciones', verifyToken, async (req, res) => 
     res.json(postulaciones);
   } catch (err) {
     res.status(500).json({ message: 'Error al obtener postulaciones', error: err.message });
+  }
+});
+
+// ─── GET /api/encargado/historial ────────────────────────────────────────────
+// Devuelve el historial de encargados de un grupo específico.
+router.get('/api/encargado/historial', verifyToken, async (req, res) => {
+  try {
+    const { grado, grupo, turno, limit = 10 } = req.query;
+    if (!grado || !grupo || !turno) {
+      return res.status(400).json({ message: 'grado, grupo y turno son requeridos' });
+    }
+    const historial = await Encargado.find({
+      grado: Number(grado), grupo, turno,
+      estado: { $in: ['activo', 'inactivo', 'sustituido'] }
+    })
+      .populate('usuarioId', 'nombre picture email')
+      .populate('sustituidoPor', 'nombre')
+      .sort({ fechaInicio: -1 })
+      .limit(Number(limit));
+    res.json(historial);
+  } catch (err) {
+    console.error('Error en historial encargados:', err);
+    res.status(500).json({ message: 'Error al obtener historial' });
   }
 });
 

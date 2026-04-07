@@ -34,6 +34,7 @@ import UserProfile from './components/UserProfile';
 import FaultyProjectors from './components/FaultyProjectors';
 import UserCommentsModal from './components/UserCommentsModal';
 import AdminEncargados from './components/AdminEncargados';
+import AdminCorreccionesPerfil from './components/AdminCorreccionesPerfil';
 
 const App = () => {
   const { 
@@ -438,6 +439,14 @@ const App = () => {
                     element={
                       isAuthenticated && isAdmin
                         ? <AdminEncargados />
+                        : <Navigate to="/signin" />
+                    }
+                  />
+                  <Route
+                    path="/admin-correcciones"
+                    element={
+                      isAuthenticated && isAdmin
+                        ? <AdminCorreccionesPerfil />
                         : <Navigate to="/signin" />
                     }
                   />

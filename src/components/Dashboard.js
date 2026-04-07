@@ -6,6 +6,7 @@ import useShowGradeGroupModal from '../hooks/useShowGradeGroupModal';
 import { authService } from '../services/authService';
 import { useTheme } from '../contexts/ThemeContext';
 import { getCurrentThemeStyles } from '../themes/themeConfig';
+import { BACKEND_URL } from '../config/config';
 
 function Dashboard({ isAuthenticated, isAdmin, setShowGradeGroupModal }) {
   const { currentTheme } = useTheme();
@@ -35,7 +36,8 @@ function Dashboard({ isAuthenticated, isAdmin, setShowGradeGroupModal }) {
     solicitudesActivas: 0,
     misSolicitudes: 0
   });
- 
+  const [encargadoInfo, setEncargadoInfo] = useState(null);
+
   useEffect(() => {
     const fetchStats = async () => {
       try {
@@ -51,6 +53,17 @@ function Dashboard({ isAuthenticated, isAdmin, setShowGradeGroupModal }) {
 
     fetchStats();
   }, []);
+
+  useEffect(() => {
+    const token = sessionStorage.getItem('jwtToken');
+    if (!token || isAdmin) return;
+    fetch(`${BACKEND_URL}/api/encargado/activo`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+      .then(r => r.json())
+      .then(data => setEncargadoInfo(data))
+      .catch(() => {});
+  }, [isAdmin]);
 
   return (
     <div className="bg-gray-100 dark:bg-gray-900 min-h-screen w-full">
@@ -76,6 +89,35 @@ function Dashboard({ isAuthenticated, isAdmin, setShowGradeGroupModal }) {
           />
         </div>
         
+        {/* Mi Encargaduría */}
+        {!isAdmin && (
+          <div className="mt-4 mb-8 bg-white dark:bg-gray-800 rounded-2xl shadow-md p-4 border border-gray-100 dark:border-gray-700">
+            <h3 className="text-sm font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wide mb-3">Mi Encargaduría</h3>
+            {encargadoInfo?.esEncargado ? (
+              <div className="flex items-center gap-3">
+                <div className="w-3 h-3 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-pulse flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">Eres el Encargado esta semana</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Puedes solicitar proyectores para tu grupo</p>
+                </div>
+                <Link to="/request-projector" className={`ml-auto px-3 py-1.5 rounded-xl text-xs font-semibold text-white bg-gradient-to-r ${themeStyles.gradient}`}>
+                  Solicitar
+                </Link>
+              </div>
+            ) : encargadoInfo?.miPostulacionSiguienteSemana ? (
+              <div className="flex items-center gap-3">
+                <div className="w-3 h-3 rounded-full bg-blue-400 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Postulado para la próxima semana</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">Estado: {encargadoInfo.miPostulacionSiguienteSemana}</p>
+                </div>
+              </div>
+            ) : (
+              <p className="text-xs text-gray-400 dark:text-gray-500">No eres encargado esta semana. Las postulaciones abren los jueves y viernes.</p>
+            )}
+          </div>
+        )}
+
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md dark:shadow-gray-700/20 p-6 mb-8">
           <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-4">
             Acciones Rápidas

@@ -77,6 +77,7 @@ app.use('/', require('./routes/comentariosRoutes'));
 app.use('/api/proyectores', require('./routes/proyectorRoutes'));
 app.use('/qr-codes', require('./routes/qrCodeRoutes'));
 app.use('/', require('./routes/encargadoRoutes'));
+app.use('/', require('./routes/perfilCorrectionRoutes'));
 
 // Manejador de errores global
 app.use((err, req, res, next) => {
@@ -128,6 +129,38 @@ cron.schedule('0 12 * * 3', async () => {
     console.log('Cron miércoles: verificación noSePresento completada.');
   } catch (err) {
     console.error('Error en cron miércoles:', err);
+  }
+});
+
+// Cron lunes 00:01 — activar encargados designados para la semana nueva
+cron.schedule('1 0 * * 1', async () => {
+  try {
+    const Encargado = require('./models/Encargado');
+    const { getISOWeek } = require('./utils/weekUtils');
+    const semana = getISOWeek(new Date());
+    const result = await Encargado.updateMany(
+      { semana, estado: 'postulado' },
+      { $set: { estado: 'activo' } }
+    );
+    console.log(`Cron lunes: ${result.modifiedCount} encargados activados para semana ${semana}.`);
+  } catch (err) {
+    console.error('Error en cron lunes:', err);
+  }
+});
+
+// Cron domingo 23:59 — cerrar encargadurías de la semana
+cron.schedule('59 23 * * 0', async () => {
+  try {
+    const Encargado = require('./models/Encargado');
+    const { getISOWeek } = require('./utils/weekUtils');
+    const semana = getISOWeek(new Date());
+    const result = await Encargado.updateMany(
+      { semana, estado: 'activo' },
+      { $set: { estado: 'inactivo' } }
+    );
+    console.log(`Cron domingo: ${result.modifiedCount} encargadurías cerradas para semana ${semana}.`);
+  } catch (err) {
+    console.error('Error en cron domingo:', err);
   }
 });
 
