@@ -434,21 +434,22 @@ const RequestProjector = () => {
             />
           ))}
 
-          <div className="relative z-10 flex flex-col items-center text-center px-6 py-10 sm:py-14">
+          <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between px-4 sm:px-6 py-5 sm:py-7 lg:py-4 text-center lg:text-left gap-3 lg:gap-8">
             {/* Ícono animado */}
             <motion.div
               animate={{ y: [0, -6, 0] }}
               transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-              className="bg-white/20 backdrop-blur-md border border-white/30 p-5 sm:p-6 rounded-2xl shadow-xl mb-5"
+              className="bg-white/20 backdrop-blur-md border border-white/30 p-4 sm:p-5 rounded-2xl shadow-xl mb-4 lg:mb-0"
             >
-              <FontAwesomeIcon icon={faTv} className="text-white h-10 w-10 sm:h-14 sm:w-14 drop-shadow-lg" />
+              <FontAwesomeIcon icon={faTv} className="text-white h-8 w-8 sm:h-10 sm:w-10 drop-shadow-lg" />
             </motion.div>
 
+            <div className="lg:flex-1">
             <motion.h1
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="text-3xl sm:text-4xl md:text-5xl font-black text-white drop-shadow-lg tracking-tight"
+              className="text-2xl sm:text-3xl md:text-4xl font-black text-white drop-shadow-lg tracking-tight"
             >
               Solicitud de Proyector
             </motion.h1>
@@ -460,17 +461,19 @@ const RequestProjector = () => {
             >
               Selecciona los días que necesitas el proyector
             </motion.p>
+            </div>
 
+            <div className="flex flex-col items-center lg:items-end gap-2">
             {/* Reloj vivo */}
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.5 }}
-              className="mt-6 bg-black/20 backdrop-blur-md border border-white/20 rounded-2xl px-6 py-3 flex items-center gap-4"
+              className="mt-3 lg:mt-0 bg-black/20 backdrop-blur-md border border-white/20 rounded-2xl px-4 py-2.5 flex items-center gap-3 lg:self-center"
             >
               <div className="text-left">
                 <p className="text-white/60 text-xs uppercase tracking-widest">Tapachula, Chiapas</p>
-                <p className="text-white font-black text-2xl sm:text-3xl font-mono tabular-nums tracking-tight leading-none mt-0.5">
+                <p className="text-white font-black text-xl sm:text-2xl font-mono tabular-nums tracking-tight leading-none mt-0.5">
                   {timeStr}
                 </p>
               </div>
@@ -486,7 +489,7 @@ const RequestProjector = () => {
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.6 }}
-              className="mt-3 bg-emerald-500/20 border border-emerald-400/30 rounded-full px-5 py-1.5 flex items-center gap-2"
+              className="mt-2 lg:mt-1 bg-emerald-500/20 border border-emerald-400/30 rounded-full px-5 py-1.5 flex items-center gap-2"
             >
               <motion.div
                 animate={{ scale: [1, 1.5, 1] }}
@@ -497,6 +500,7 @@ const RequestProjector = () => {
                 Eres el Encargado de tu grupo esta semana
               </span>
             </motion.div>
+            </div>
           </div>
         </div>
 

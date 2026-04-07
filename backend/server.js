@@ -100,6 +100,37 @@ cron.schedule('0 0 * * 0', async () => {
   }
 });
 
+// Cron miércoles 12:00 — marcar noSePresento a encargados sin solicitudes
+cron.schedule('0 12 * * 3', async () => {
+  try {
+    const { getISOWeek, getMondayOfWeek } = require('./utils/weekUtils');
+    const Encargado = require('./models/Encargado');
+    const Solicitud = require('./models/Solicitud');
+    const Notification = require('./models/Notification');
+
+    const semana = getISOWeek(new Date());
+    const lunes = getMondayOfWeek(semana);
+    const encargados = await Encargado.find({ semana, tipo: 'titular', estado: 'activo', noSePresento: false });
+
+    for (const enc of encargados) {
+      const count = await Solicitud.countDocuments({ usuarioId: enc.usuarioId, createdAt: { $gte: lunes } });
+      if (count === 0) {
+        await Encargado.findByIdAndUpdate(enc._id, { noSePresento: true });
+        await Notification.create({
+          usuarioId: enc.usuarioId,
+          mensaje: 'No has registrado solicitudes de proyector esta semana. Tu grupo puede solicitar un encargado provisional.',
+          tipo: 'warning',
+          entidadId: enc._id,
+          entidadTipo: 'Encargado'
+        });
+      }
+    }
+    console.log('Cron miércoles: verificación noSePresento completada.');
+  } catch (err) {
+    console.error('Error en cron miércoles:', err);
+  }
+});
+
 // Conectar a MongoDB e iniciar servidor
 mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
