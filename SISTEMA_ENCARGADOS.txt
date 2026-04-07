@@ -63,23 +63,22 @@ MODELO DE DATOS NUEVO — SolicitudCorreccionPerfil
 CHECKLIST DE IMPLEMENTACIÓN — PARTE A
 --------------------------------------
 Backend:
-  [ ] Crear modelo SolicitudCorreccionPerfil en models/
-  [ ] POST /api/perfil-correction    — user crea solicitud
-  [ ] GET  /api/perfil-correction    — admin lista todas las solicitudes
-  [ ] PUT  /api/perfil-correction/:id — admin aprueba o rechaza
-  [ ] Middleware que bloquee PUT /update-user si no hay aprobación activa
+  [x] Crear modelo SolicitudCorreccionPerfil en models/
+  [x] POST /api/perfil-correction    — user crea solicitud
+  [x] GET  /api/perfil-correction    — admin lista todas las solicitudes
+  [x] PUT  /api/perfil-correction/:id — admin aprueba o rechaza
+  [x] Middleware que bloquee PUT /update-user si no hay aprobación activa
       y no expiró la ventana de 24h
-  [ ] Al aprobar: calcular fechaExpiracion = ahora + 24h y guardar en DB
-  [ ] Notificación al usuario cuando admin aprueba o rechaza
+  [x] Al aprobar: calcular fechaExpiracion = ahora + 24h y guardar en DB
+  [x] Notificación al usuario cuando admin aprueba o rechaza
 
 Frontend:
-  [ ] Botón "Solicitar corrección de datos" en UserProfile.js
-  [ ] Modal con: campos a corregir (checkboxes) + justificación (textarea)
-  [ ] Estado visible en UserProfile: "Solicitud pendiente / Aprobada (te quedan Xh) / Rechazada"
-  [ ] Si está aprobada y en ventana: habilitar formulario de edición en UserProfile
-  [ ] Panel admin: nueva sección en user-requests o admin-dashboard
-      mostrando solicitudes de corrección pendientes con botón aprobar/rechazar
-  [ ] Notificación en NotificationsDropdown cuando cambie el estado
+  [x] Botón "Solicitar corrección de datos" en UserProfile.js
+  [x] Modal con: campos a corregir (checkboxes) + justificación (textarea)
+  [x] Estado visible en UserProfile: "Solicitud pendiente / Aprobada (te quedan Xh) / Rechazada"
+  [x] Si está aprobada y en ventana: habilitar formulario de edición en UserProfile
+  [x] Panel admin: /admin-correcciones (AdminCorreccionesPerfil.js) con aprobar/rechazar
+  [x] Notificación en NotificationsDropdown cuando cambie el estado
 
 
 ================================================================================
@@ -175,10 +174,10 @@ Backend:
         verifica que el usuario sea Encargado activo o Provisional activo
         de su grupo en la semana actual. Si no, bloquea acceso a
         POST /solicitar-proyector con error 403 y mensaje descriptivo.
-  [ ] Cron job lunes 00:01: activar encargados de la semana nueva     (FASE 4)
+  [x] Cron job lunes 00:01: activar encargados de la semana nueva     (FASE 4)
   [x] Cron job miércoles 12:00: marcar noSePresento=true a encargados
       activos que no tengan ninguna solicitud registrada esa semana   (FASE 2)
-  [ ] Cron job domingo 23:59: cerrar todas las encargadurías de la semana (FASE 4)
+  [x] Cron job domingo 23:59: cerrar todas las encargadurías de la semana (FASE 4)
 
 Frontend — Usuario:
   [x] Botón "Postularme como Encargado" (visible solo los jueves y viernes)
@@ -191,7 +190,7 @@ Frontend — Usuario:
       claro: "No eres el encargado activo de tu grupo esta semana.
       Solo [Nombre del Encargado] puede hacer solicitudes."
   [x] Notificación cuando seas designado Encargado o Provisional
-  [ ] Panel "Mi Encargaduría" dedicado en Dashboard o sección propia   (FASE 4)
+  [x] Panel "Mi Encargaduría" dedicado en Dashboard o sección propia   (FASE 4)
 
 Frontend — Admin:
   [x] Sección "Encargados" en AdminSidebar
@@ -232,7 +231,7 @@ NOTIFICACIONES CLAVE A AGREGAR
   [x] Usuario designado como Encargado
   [x] Usuario designado como Provisional
   [x] Alerta de sustitución pendiente (para admin) — notificación a todos los admins
-  [ ] Solicitud de corrección de perfil aprobada/rechazada             (FASE 3)
+  [x] Solicitud de corrección de perfil aprobada/rechazada             (FASE 3)
   [ ] Recordatorio jueves 08:00: "Abre la postulación de encargados"
       (cron + notificación a todos los usuarios con perfil completo)   (FASE 4)
   [ ] Alerta miércoles 12:00 al encargado: "No has registrado solicitudes,
@@ -257,25 +256,25 @@ NOTIFICACIONES CLAVE A AGREGAR
 
   FASE 2 (control anti-trampa)
   ----------------------------
-  [ ] Validación de perfil modificado reciente (<7 días bloqueado para postular)
+  [x] Validación de perfil modificado reciente (<7 días bloqueado para postular)
   [x] Cron miércoles 12:00: marcar noSePresento=true
   [x] Alerta visual en panel admin cuando hay sustitución pendiente
   [x] Alerta miércoles 12:00 al encargado ausente
 
-  FASE 3 (corrección de perfil)
-  ------------------------------
-  [ ] Modelo SolicitudCorreccionPerfil + endpoints
-  [ ] Panel admin de correcciones
-  [ ] Ventana de edición 24h en UserProfile
-  [ ] Bloqueo PUT /update-user sin aprobación
+  FASE 3 (corrección de perfil) ✓ COMPLETADA
+  ------------------------------------------
+  [x] Modelo SolicitudCorreccionPerfil + endpoints
+  [x] Panel admin de correcciones (/admin-correcciones)
+  [x] Ventana de edición 24h en UserProfile
+  [x] Bloqueo PUT /update-user sin aprobación
 
-  FASE 4 (pulido)
-  ---------------
-  [ ] Cron lunes 00:01: activar encargados de la semana nueva
-  [ ] Cron domingo 23:59: cerrar encargadurías de la semana
+  FASE 4 (pulido) — parcialmente completada
+  ------------------------------------------
+  [x] Cron lunes 00:01: activar encargados de la semana nueva
+  [x] Cron domingo 23:59: cerrar encargadurías de la semana
   [ ] Cron + notificación jueves 08:00: recordatorio de postulación
-  [ ] Historial de encargados por grupo en panel admin
-  [ ] Panel "Mi Encargaduría" en Dashboard del usuario
+  [x] Historial de encargados por grupo (endpoint GET /api/encargado/historial)
+  [x] Panel "Mi Encargaduría" en Dashboard del usuario (card con estado)
   [ ] Dashboard admin con métricas: grupos sin encargado, sustituciones del mes
 
 
