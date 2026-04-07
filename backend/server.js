@@ -164,6 +164,53 @@ cron.schedule('59 23 * * 0', async () => {
   }
 });
 
+// Cron jueves 08:00 — recordatorio de postulación para la semana siguiente
+cron.schedule('0 8 * * 4', async () => {
+  try {
+    const User = require('./models/User');
+    const Notification = require('./models/Notification');
+    const { getNextISOWeek, getISOWeek } = require('./utils/weekUtils');
+    const Encargado = require('./models/Encargado');
+
+    const semanaProxima = getNextISOWeek(getISOWeek(new Date()));
+
+    // Obtener todos los usuarios con perfil completo que no son admins
+    const usuarios = await User.find({
+      grado: { $ne: null },
+      grupo: { $ne: null },
+      turno: { $ne: null },
+      isAdmin: false
+    }).select('_id');
+
+    // Filtrar los que ya tienen encargado designado para la próxima semana (no necesitan postularse)
+    const encargadosProxSemana = await Encargado.find({ semana: semanaProxima }).select('usuarioId grado grupo turno');
+    const gruposConEncargado = new Set(encargadosProxSemana.map(e => `${e.grado}-${e.grupo}-${e.turno}`));
+
+    const usuariosConPerfil = await User.find({
+      grado: { $ne: null },
+      grupo: { $ne: null },
+      turno: { $ne: null },
+      isAdmin: false
+    }).select('_id grado grupo turno');
+
+    const notificaciones = usuariosConPerfil
+      .filter(u => !gruposConEncargado.has(`${u.grado}-${u.grupo}-${u.turno}`))
+      .map(u => ({
+        usuarioId: u._id,
+        mensaje: '¡Recuerda postularte como Encargado para la próxima semana! Las postulaciones están abiertas hoy y mañana (jueves y viernes).',
+        tipo: 'info',
+        entidadTipo: 'Encargado'
+      }));
+
+    if (notificaciones.length > 0) {
+      await Notification.insertMany(notificaciones);
+    }
+    console.log(`Cron jueves: ${notificaciones.length} recordatorios de postulación enviados.`);
+  } catch (err) {
+    console.error('Error en cron jueves:', err);
+  }
+});
+
 // Conectar a MongoDB e iniciar servidor
 mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,

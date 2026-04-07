@@ -117,4 +117,60 @@ router.get('/api/reports', verifyToken, isAdmin, async (req, res) => {
   }
 });
 
+// GET /api/admin/encargado-stats — métricas de encargados para el dashboard admin
+router.get('/api/admin/encargado-stats', verifyToken, isAdmin, async (req, res) => {
+  try {
+    const Encargado = require('../models/Encargado');
+    const { getISOWeek, getPrevISOWeek } = require('../utils/weekUtils');
+
+    const semanaActual = getISOWeek(new Date());
+    const semanaAnterior = getPrevISOWeek(semanaActual);
+
+    // Grupos únicos de la BD (de usuarios activos)
+    const grupos = await User.aggregate([
+      { $match: { grado: { $ne: null }, grupo: { $ne: null }, turno: { $ne: null }, isAdmin: false } },
+      { $group: { _id: { grado: '$grado', grupo: '$grupo', turno: '$turno' } } }
+    ]);
+    const totalGrupos = grupos.length;
+
+    // Encargados esta semana
+    const encargadosSemana = await Encargado.find({ semana: semanaActual });
+    const gruposConEncargado = new Set(encargadosSemana.map(e => `${e.grado}-${e.grupo}-${e.turno}`));
+    const sinEncargado = totalGrupos - gruposConEncargado.size;
+
+    // Sustituciones este mes
+    const inicioMes = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    const sustitucionesDelMes = await Encargado.countDocuments({
+      tipo: 'provisional',
+      estado: { $in: ['activo', 'inactivo'] },
+      createdAt: { $gte: inicioMes }
+    });
+
+    // Postulaciones pendientes de designar
+    const postulacionesPendientes = await Encargado.countDocuments({
+      semana: semanaActual,
+      estado: 'postulado'
+    });
+
+    // Encargados activos sin presentarse (noSePresento=true)
+    const ausentesEstaSemana = await Encargado.countDocuments({
+      semana: semanaActual,
+      noSePresento: true
+    });
+
+    res.json({
+      semanaActual,
+      totalGrupos,
+      gruposConEncargado: gruposConEncargado.size,
+      sinEncargado,
+      sustitucionesDelMes,
+      postulacionesPendientes,
+      ausentesEstaSemana
+    });
+  } catch (err) {
+    console.error('Error en encargado-stats:', err);
+    res.status(500).json({ message: 'Error al obtener métricas de encargados' });
+  }
+});
+
 module.exports = router;

@@ -2,29 +2,38 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTv, faUsers, faClipboardList, faBell, faCheck, faTimes, faEdit } from '@fortawesome/free-solid-svg-icons';
+import toast from 'react-hot-toast';
 import { authService } from '../services/authService';
 import { useTheme } from '../contexts/ThemeContext';
 import { getCurrentThemeStyles } from '../themes/themeConfig';
 
 function AdminDashboard() {
   const [requests, setRequests] = useState([]);
+  const [encargadoStats, setEncargadoStats] = useState(null);
   const { currentTheme } = useTheme();
   const themeStyles = getCurrentThemeStyles(currentTheme);
 
   useEffect(() => {
     const fetchSolicitudes = async () => {
       try {
-        console.log('Token actual:', authService.getStoredToken());
         const response = await authService.api.get('/solicitudes');
-        console.log('Respuesta de solicitudes:', response.data);
         setRequests(response.data);
       } catch (error) {
-        console.error('Error detallado:', error.response?.data || error.message);
-        console.error('Error al obtener las solicitudes:', error);
+        // silently ignore
+      }
+    };
+
+    const fetchEncargadoStats = async () => {
+      try {
+        const response = await authService.api.get('/api/admin/encargado-stats');
+        setEncargadoStats(response.data);
+      } catch (error) {
+        // silently ignore
       }
     };
 
     fetchSolicitudes();
+    fetchEncargadoStats();
   }, []);
 
   const handleStatusChange = async (requestId, newStatus) => {
@@ -38,11 +47,10 @@ function AdminDashboard() {
           request._id === requestId ? { ...request, estado: newStatus } : request
         ));
         
-        alert(`Solicitud ${newStatus} exitosamente`);
+        toast.success(`Solicitud ${newStatus} exitosamente`);
       }
     } catch (error) {
-      console.error('Error al actualizar el estado:', error);
-      alert('Error al actualizar el estado de la solicitud');
+      toast.error('Error al actualizar el estado de la solicitud');
     }
   };
 
@@ -87,6 +95,31 @@ function AdminDashboard() {
         />
       </div>
       
+      {encargadoStats && (
+        <div className="mb-8">
+          <h2 className="text-lg font-bold text-gray-700 dark:text-gray-300 mb-4">Encargados esta semana</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+            {[
+              { label: 'Total grupos', value: encargadoStats.totalGrupos, color: 'text-gray-700 dark:text-gray-200', bg: 'bg-white dark:bg-gray-800' },
+              { label: 'Con encargado', value: encargadoStats.gruposConEncargado, color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/20' },
+              { label: 'Sin encargado', value: encargadoStats.sinEncargado, color: encargadoStats.sinEncargado > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-400', bg: encargadoStats.sinEncargado > 0 ? 'bg-red-50 dark:bg-red-900/20' : 'bg-white dark:bg-gray-800' },
+              { label: 'Postulaciones pendientes', value: encargadoStats.postulacionesPendientes, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/20' },
+              { label: 'Sustituciones este mes', value: encargadoStats.sustitucionesDelMes, color: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/20' },
+            ].map(({ label, value, color, bg }) => (
+              <div key={label} className={`${bg} rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 text-center`}>
+                <p className={`text-2xl font-black ${color}`}>{value}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-tight">{label}</p>
+              </div>
+            ))}
+          </div>
+          {encargadoStats.ausentesEstaSemana > 0 && (
+            <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
+              ⚠ {encargadoStats.ausentesEstaSemana} encargado{encargadoStats.ausentesEstaSemana > 1 ? 's' : ''} marcado{encargadoStats.ausentesEstaSemana > 1 ? 's' : ''} como ausente esta semana
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Solicitudes Recientes - Diseño mejorado con tema actual */}
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 overflow-hidden">
         <div className="flex justify-between items-center mb-6">
@@ -210,7 +243,7 @@ function TableRow({ request, onStatusChange, themeStyles }) {
             <FontAwesomeIcon icon={faTimes} className="w-4 h-4" />
           </button>
           <button 
-            onClick={() => console.log('Editar', request._id)} 
+            onClick={() => {}}
             className={`${themeStyles.text} hover:opacity-80 transition-colors hover:scale-125 transform`}
             title="Editar solicitud"
           >
